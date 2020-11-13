@@ -1,7 +1,7 @@
 <template>
   <div class="apply-contaniner">
     <myfilters
-      title="退货申请单"
+      title="退回申请单"
       content="NO.0033124"
       :back-button="true"
       style="margin-bottom:20px"
@@ -31,8 +31,7 @@
       <el-row style="margin-bottom:6px">
         <myfilters
           ref="applyFilters"
-          title="退货清单"
-          add-icon="el-icon-circle-plus-outline"
+          title="退回清单"
           addifo="添加"
           placeholder="器械包名称/编号"
           :search-content="true"

@@ -3,12 +3,12 @@
     <myfilters
       title="出/入库管理"
       :content="content"
-      :choose-status="true"
-      :status-options="statusOptions"
+      :choose-type="true"
+      :type-options="typeOptions"
       :search-content="true"
       placeholder="器械编号/名称"
     />
-    <el-table ref="table" :data="tableData" style="width: 100%">
+    <el-table ref="table" v-loading="listLoading" :data="tableData" style="width: 100%">
       <el-table-column label="序号" type="index" width="100" />
       <el-table-column label="编号" prop="code" />
       <el-table-column label="类别" prop="type" />
@@ -24,13 +24,14 @@
 
 <script>
 import myfilters from '@/components/myfilters'
-
+import api from '@/api'
 export default {
   components: {
     myfilters
   },
   data() {
     return {
+      listLoading: true,
       tableData: [
         {
           code: '10001',
@@ -73,7 +74,7 @@ export default {
           identification: '申购入库'
         }
       ],
-      statusOptions: [
+      typeOptions: [
         {
           value: '全部类别',
           label: '全部类别'
@@ -98,7 +99,18 @@ export default {
       return '共' + this.tableData.length + '条数据'
     }
   },
+  created() {
+    this.fetchData()
+  },
   methods: {
+    fetchData() {
+      this.listLoading = true
+      // 出入库记录
+      api.toWarehousePage().then(response => {
+        console.log(response)
+      })
+      this.listLoading = false
+    }
   }
 }
 </script>

@@ -5,13 +5,15 @@
       ref="myfilters"
       title="供货公司维护"
       :add-button="true"
-      addifo="新增"
-      add-icon="el-icon-circle-plus-outline"
+      :search-content="true"
+      placeholder="公司名称"
+      @contentChange="contentChange"
       @addClick="addClick"
     />
     <!-- 头部end -->
     <!-- table -->
     <el-table
+      v-loading="listLoading"
       :data="tableData"
       style="width: 100%"
     >
@@ -20,10 +22,10 @@
         <template slot-scope="props">
           <el-form label-position="left" inline class="demo-table-expand">
             <el-form-item label="拼音码">
-              <span>{{ props.row.pinyinCode }}</span>
+              <span>{{ props.row.spellCode }}</span>
             </el-form-item>
             <el-form-item label="五笔码">
-              <span>{{ props.row.wubiCode }}</span>
+              <span>{{ props.row.strokeCode }}</span>
             </el-form-item>
             <el-form-item label="自定义码">
               <span>{{ props.row.customCode }}</span>
@@ -35,35 +37,42 @@
               <span>{{ props.row.website }}</span>
             </el-form-item>
             <el-form-item label="公司邮箱">
-              <span>{{ props.row.mailbox }}</span>
+              <span>{{ props.row.companyEmail }}</span>
             </el-form-item>
             <el-form-item label="联系人邮箱">
               <span>{{ props.row.contactEmail }}</span>
             </el-form-item>
             <el-form-item label="ISO信息">
-              <span>{{ props.row.iso }}</span>
+              <span>{{ props.row.isoMessage }}</span>
             </el-form-item>
-            <el-form-item label="政策扣税">
-              <span>{{ props.row.deduction }}</span>
+            <el-form-item label="备注">
+              <span>{{ props.row.remark }}</span>
             </el-form-item>
           </el-form>
         </template>
       </el-table-column>
       <!-- 公司详细end -->
       <el-table-column
-        prop="Name"
+        prop="name"
         label="公司名称"
       />
       <el-table-column
-        prop="category"
+        label="公司类别"
+      >
+        <template slot-scope="scope">
+          {{ ssd_company_type[scope.row.companyType] }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="legalPerson"
         label="公司法人"
       />
       <el-table-column
-        prop="telephone"
+        prop="companyTelephone"
         label="公司电话"
       />
       <el-table-column
-        prop="address"
+        prop="companyAddress"
         label="公司地址"
       />
       <el-table-column
@@ -71,16 +80,16 @@
         label="联系人"
       />
       <el-table-column
-        prop="account"
+        prop="depositBank"
         label="开户银行"
       />
       <el-table-column
-        prop="credit"
+        prop="accountNumber"
         label="开户账户"
       />
       <el-table-column
-        prop="remark"
-        label="备注"
+        prop="taxDeduction"
+        label="政策扣税"
       />
       <el-table-column width="220">
         <template slot-scope="scope">
@@ -141,51 +150,95 @@
         </template>
       </el-table-column>
     </el-table>
-    <!-- 头部end -->
+    <!-- table end -->
+    <my-pagination :total="totalCount" methods="toCompanyPage" :conditions="conditions" />
     <!-- 公司编辑新增弹窗 -->
     <el-dialog v-el-drag-dialog title="供货公司" :visible.sync="show" width="800px">
       <div class="dialog-main">
-        <el-form ref="form" :model="form" label-width="100px">
+        <el-form ref="form" :model="form" label-width="100px" :rules="rules">
           <el-row type="flex" justify="space-between">
             <el-col :span="11">
-              <el-form-item label="公司名称">
-                <el-input v-model="form.Name" />
+              <el-form-item label="公司名称" prop="name">
+                <el-input v-model="form.name" />
               </el-form-item>
             </el-col>
             <el-col :span="11">
-              <el-form-item label="拼音编码">
-                <el-input v-model="form.pinyinCode" />
+              <el-form-item label="公司类别" prop="companyType">
+                <el-select v-model="form.companyType" placeholder="">
+                  <el-option
+                    v-for="(val,key) in ssd_company_type"
+                    :key="val"
+                    :label="val"
+                    :value="key"
+                  />
+                </el-select>
               </el-form-item>
             </el-col>
           </el-row>
           <el-row type="flex" justify="space-between">
             <el-col :span="11">
-              <el-form-item label="五笔编码">
-                <el-input v-model="form.wubiCode" />
+              <el-form-item label="公司电话" prop="companyTelephone">
+                <el-input v-model="form.companyTelephone" />
               </el-form-item>
             </el-col>
+            <el-col :span="11">
+              <el-form-item label="公司地址" prop="companyAddress">
+                <el-input v-model="form.companyAddress" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row type="flex" justify="space-between">
+            <el-col :span="11">
+              <el-form-item label="开户银行" prop="depositBank">
+                <el-input v-model="form.depositBank" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="11">
+              <el-form-item label="开户账户" prop="accountNumber">
+                <el-input v-model="form.accountNumber" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row type="flex" justify="space-between">
+            <el-col :span="11">
+              <el-form-item label="公司法人" prop="legalPerson">
+                <el-input v-model="form.legalPerson" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="11">
+              <el-form-item label="联系人" prop="contact">
+                <el-input v-model="form.contact" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row type="flex" justify="space-between">
+            <el-col :span="11">
+              <el-form-item label="政策扣税" prop="taxDeduction">
+                <el-input v-model="form.taxDeduction" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="11">
+              <el-form-item label="联系人邮箱">
+                <el-input v-model="form.contactEmail" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row type="flex" justify="space-between">
+            <el-col :span="11">
+              <el-form-item label="拼音编码">
+                <el-input v-model="form.spellCode" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="11">
+              <el-form-item label="五笔编码">
+                <el-input v-model="form.strokeCode" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row type="flex" justify="space-between">
             <el-col :span="11">
               <el-form-item label="自定义编码">
                 <el-input v-model="form.customCode" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row type="flex" justify="space-between">
-            <el-col :span="11">
-              <el-form-item label="公司法人">
-                <el-input v-model="form.category" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="11">
-              <el-form-item label="公司电话">
-                <el-input v-model="form.telephone" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row type="flex" justify="space-between">
-            <el-col :span="11">
-              <el-form-item label="公司地址">
-                <el-input v-model="form.address" />
               </el-form-item>
             </el-col>
             <el-col :span="11">
@@ -202,49 +255,17 @@
             </el-col>
             <el-col :span="11">
               <el-form-item label="公司邮箱">
-                <el-input v-model="form.mailbox" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row type="flex" justify="space-between">
-            <el-col :span="11">
-              <el-form-item label="联系人">
-                <el-input v-model="form.contact" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="11">
-              <el-form-item label="联系人邮箱">
-                <el-input v-model="form.contactEmail" />
+                <el-input v-model="form.companyEmail" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row type="flex" justify="space-between">
             <el-col :span="11">
               <el-form-item label="ISO信息">
-                <el-input v-model="form.iso" />
+                <el-input v-model="form.isoMessage" />
               </el-form-item>
             </el-col>
             <el-col :span="11">
-              <el-form-item label="开户银行">
-                <el-input v-model="form.account" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row type="flex" justify="space-between">
-            <el-col :span="11">
-              <el-form-item label="开户账户">
-                <el-input v-model="form.credit" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="11">
-              <el-form-item label="政策扣税">
-                <el-input v-model="form.deduction" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-
-          <el-row type="flex" justify="space-between">
-            <el-col :span="24">
               <el-form-item label="备注">
                 <el-input v-model="form.remark" />
               </el-form-item>
@@ -263,150 +284,124 @@
 
 <script>
 import myfilters from '@/components/myfilters'
+import myPagination from '@/components/MyPagination'
+import api from '@/api'
 
 export default {
   components: {
-    myfilters
+    myfilters, myPagination
   },
   data() {
     return {
-      tbox: true,
-      cbox: false,
-      lbox: false,
+      listLoading: true,
+      rules: {
+        name: [
+          { required: true, message: '请输入公司名称', trigger: 'blur' }
+        ],
+        accountNumber: [
+          { required: true, message: '请输入开户账号', trigger: 'blur' }
+        ],
+        companyAddress: [
+          { required: true, message: '请输入公司地址', trigger: 'blur' }
+        ],
+        companyTelephone: [
+          { required: true, message: '请输入公司电话', trigger: 'blur' }
+        ],
+        companyType: [
+          { required: true, message: '请输入公司类别', trigger: 'blur' }
+        ],
+        contact: [
+          { required: true, message: '请输入联系人', trigger: 'blur' }
+        ],
+        depositBank: [
+          { required: true, message: '请输入开户银行', trigger: 'blur' }
+        ],
+        legalPerson: [
+          { required: true, message: '请输入公司法人', trigger: 'blur' }
+        ],
+        taxDeduction: [
+          { required: true, message: '请输入政策扣税', trigger: 'blur' }
+        ]
+      },
       show: false,
       edit: false,
       editIndex: 0,
-      tableData: [
-        {
-          Name: '广州市穗丰日用品有限公司',
-          pinyinCode: 'gzsdfryp',
-          wubiCode: 'gzsdfryp ',
-          customCode: 'gzsdfryp',
-          category: '李晓彤',
-          address: '广州市海珠区滨江中路89号1208',
-          telephone: '85645342',
-          fax: '85645342',
-          website: 'www.suifen.cn',
-          mailbox: 'admin@uifen.cn',
-          contact: '郭彩霞',
-          contactEmail: 'guocaixia@uifen.cn',
-          iso: '2353259349058392878',
-          account: '中国银行滨江中路支行',
-          credit: '60034903403403434',
-          deduction: '33%',
-          remark: '穗丰的产品'
-        },
-        {
-          Name: '广州市穗丰日用品有限公司',
-          pinyinCode: 'gzsdfryp',
-          wubiCode: 'gzsdfryp ',
-          customCode: 'gzsdfryp',
-          category: '李晓彤',
-          address: '广州市海珠区滨江中路89号1208',
-          telephone: '85645342',
-          fax: '85645342',
-          website: 'www.suifen.cn',
-          mailbox: 'admin@uifen.cn',
-          contact: '郭彩霞',
-          contactEmail: 'guocaixia@uifen.cn',
-          iso: '2353259349058392878',
-          account: '中国银行滨江中路支行',
-          credit: '60034903403403434',
-          deduction: '33%',
-          remark: '穗丰的产品'
-        },
-        {
-          Name: '广州市穗丰日用品有限公司',
-          pinyinCode: 'gzsdfryp',
-          wubiCode: 'gzsdfryp ',
-          customCode: 'gzsdfryp',
-          category: '李晓彤',
-          address: '广州市海珠区滨江中路89号1208',
-          telephone: '85645342',
-          fax: '85645342',
-          website: 'www.suifen.cn',
-          mailbox: 'admin@uifen.cn',
-          contact: '郭彩霞',
-          contactEmail: 'guocaixia@uifen.cn',
-          iso: '2353259349058392878',
-          account: '中国银行滨江中路支行',
-          credit: '60034903403403434',
-          deduction: '33%',
-          remark: '穗丰的产品'
-        }
-      ],
-      title: '',
-      form: {
-        pinyinCode: '',
-        wubiCode: '',
-        customCode: '',
-        fax: '',
-        website: '',
-        mailbox: '',
-        contactEmail: '',
-        iso: '',
-        deduction: '',
-        Name: '',
-        category: '',
-        telephone: '',
-        address: '',
-        contact: '',
-        account: '',
-        credit: '',
-        remark: ''
-      },
-      oldForm: null
+      tableData: [],
+      ssd_company_type: null,
+      form: {},
+      oldForm: null,
+      totalCount: 0,
+      conditions: {}
     }
   },
-  // created() {
-  //   this.fetchData()
-  // },
+  created() {
+    this.fetchData()
+  },
   methods: {
+    fetchData() {
+      this.listLoading = true
+      api.toCompanyPage().then(response => {
+        this.totalCount = response.data.totalCount
+        this.ssd_company_type = response.data.dictData.ssd_company_type
+        this.tableData = response.data.records
+        this.listLoading = false
+      })
+    },
     // 新增按钮
     addClick() {
       this.edit = false
-      this.form = {
-        pinyinCode: '',
-        wubiCode: '',
-        customCode: '',
-        fax: '',
-        website: '',
-        mailbox: '',
-        contactEmail: '',
-        iso: '',
-        deduction: '',
-        Name: '',
-        category: '',
-        telephone: '',
-        address: '',
-        contact: '',
-        account: '',
-        credit: '',
-        remark: ''
-      }
+      this.form = {}
       this.show = true
     },
     // 新增弹窗确认
     addSubmit() {
-      this.$message({
-        message: '添加成功',
-        type: 'success'
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toAddcompany(this.form).then(response => {
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.tableData.push(response.data)
+              this.$message({
+                message: '添加成功',
+                type: 'success'
+              })
+            }
+          })
+          this.show = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
-      this.tableData.push(this.form)
-      this.show = false
     },
     // 编辑弹窗确认
     editSubmit() {
-      this.show = false
       if (JSON.stringify(this.form) === JSON.stringify(this.oldForm)) {
         this.$message('无信息修改')
+        this.show = false
         return
       }
-      this.$message({
-        message: '修改成功',
-        type: 'success'
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toRevisecompany(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.tableData.splice(this.editIndex, 1, response.data)
+              this.$message({
+                message: '修改成功',
+                type: 'success'
+              })
+            }
+          })
+          this.show = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
-      this.tableData.splice(this.editIndex, 1, this.form)
     },
     // 操作
     handleCommand({ index, row, action }) {
@@ -414,27 +409,34 @@ export default {
     },
     // 许可证
     licenseShow(index, row) {
-      this.title = row.Name + '许可证'
       this.$router.push({
         name: 'license',
-        params: { title: this.title }
+        query: {
+          id: row.id
+        }
       })
     },
     // 合同
     contractShow(index, row) {
-      this.title = row.Name + '合同'
       this.$router.push({
         name: 'contract',
-        params: { title: this.title }
+        query: {
+          id: row.id
+        }
       })
     },
     // 删除
     handleDelete(index, row) {
-      this.$message({
-        message: '删除成功',
-        type: 'success'
+      api.toDeletecompany(row).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData.splice(index, 1)
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
+        }
       })
-      this.tableData.splice(index, 1)
     },
     // 编辑
     handleEdit(index, row) {
@@ -443,6 +445,19 @@ export default {
       this.edit = true
       this.editIndex = index
       this.show = true
+    },
+    contentChange(content) {
+      this.$set(this.conditions, 'name', content)
+      this.$set(this.conditions, 'pageNo', 1)
+      this.listLoading = true
+      api
+        .toCompanyPage(this.conditions)
+        .then(response => {
+          // console.log(response)
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.listLoading = false
+        })
     }
   }
 }

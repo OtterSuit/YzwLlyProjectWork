@@ -1,138 +1,111 @@
 <template>
   <div class="archives-container">
-    <el-row>
-      <el-col :span="10" :offset="7">
-        <div class="user box">
-          <!-- <div class="editBox" @click="editClick">
-        <i class="el-icon-edit-outline" />
-        <span>修改</span>
-        <div class="editBoxBg" />
-      </div> -->
-          <el-row style="margin-bottom:16px">
-            <span class="title">我的信息</span>
-          </el-row>
-          <el-row type="flex" justify="space-between">
-            <el-col :span="6" class="userImgBox">
-              <img src="@/assets/images/meili.png" class="userImg">
-              <el-upload
-                class="upload"
-                action="https://jsonplaceholder.typicode.com/posts/"
-                list-type="picture-card"
-                :show-file-list="false"
-              >
-                <i class="iconfont icon-shangchuan uploadIcon" />
-                <div class="el-upload__text">更换头像</div>
-              </el-upload>
-            </el-col>
-          </el-row>
-          <el-row v-for="item in row" :key="item.label" class="row">
-            <el-col :span="5">
-              <div class="label">{{ item.label }}</div>
-            </el-col>
-            <el-col :span="15">
-              <div v-if="item.edit">
-                <el-input v-model="form[item.value]" class="edit-input" size="small" />
-              </div>
-              <div v-else class="content">
-                {{ form[item.value] }}
-              </div>
-            </el-col>
-            <el-col :span="4">
-              <el-button
-                v-if="item.edit"
-                type="success"
-                size="mini"
-                icon="el-icon-check"
-                @click="editSubmit(item)"
-              >
-                Ok
-              </el-button>
-              <el-button
-                v-else
-                type="primary"
-                size="mini"
-                icon="el-icon-edit"
-                @click="item.edit=!item.edit"
-              >
-                Edit
-              </el-button>
-            </el-col>
-          </el-row>
-        </div>
-      </el-col>
-    </el-row>
+    <div style="width:100%">
+      <el-row>
+        <el-col :span="10" :offset="7">
+          <div class="user box">
+            <el-row style="margin-bottom:16px">
+              <span class="title">我的信息</span>
+            </el-row>
+            <el-row type="flex" justify="space-between">
+              <el-col :span="6" class="userImgBox">
+                <img v-if="form.headIcon&&form.headIcon!==''" :src="imgSrc(form.headIcon)" class="userImg">
+                <img v-else src="@/assets/images/noimg-01.jpg" class="userImg">
+                <el-upload
+                  class="upload"
+                  list-type="picture-card"
+                  :show-file-list="false"
+                  accept=".jpg, .jpeg, .png"
+                  :headers="{Authorization:token}"
+                  :on-success="handleSuccess"
+                  :before-upload="beforeUpload"
+                  :action="action"
+                  name="files"
+                >
+                  <i class="el-icon-upload uploadIcon" />
+                  <div class="el-upload__text">更换头像</div>
+                </el-upload>
+              </el-col>
+            </el-row>
+            <el-row class="row">
+              <el-col :span="5" :offset="2">
+                <div class="label">名称</div>
+              </el-col>
+              <el-col :span="15">
+                <div>
+                  <el-input v-model="form.realName" class="edit-input" size="small" />
+                </div>
+              </el-col>
+            </el-row>
+            <el-row class="row">
+              <el-col :span="5" :offset="2">
+                <div class="label">电话号码</div>
+              </el-col>
+              <el-col :span="15">
+                <div>
+                  <el-input v-model="form.mobilePhone" class="edit-input" size="small" />
+                </div>
+              </el-col>
+            </el-row>
+            <el-row class="row">
+              <el-col :span="5" :offset="2">
+                <div class="label">邮箱地址</div>
+              </el-col>
+              <el-col :span="15">
+                <div>
+                  <el-input v-model="form.email" class="edit-input" size="small" />
+                </div>
+              </el-col>
+            </el-row>
+            <el-row class="row">
+              <el-col :span="5" :offset="2">
+                <div class="label">个人简介</div>
+              </el-col>
+              <el-col :span="15">
+                <div>
+                  <el-input
+                    v-model="form.description"
+                    type="textarea"
+                    :rows="2"
+                  />
+                </div>
+              </el-col>
+            </el-row>
+          </div>
+        </el-col>
+      </el-row>
+      <div style="text-align:center">
+        <el-button type="primary" @click="onSubmit">保存</el-button>
+        <el-button type="primary" @click="onCancel">取消</el-button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import api from '@/api'
+import APIconfig from '@/api/APIconfig'
+import { getToken } from '@/utils/auth'
+const fileURL = api.fileURL
 // postArchives
-import { getUserArchives } from '@/api/people/archives'
 export default {
   data() {
     return {
-      row: [
-        {
-          label: '姓名',
-          value: 'name',
-          edit: false
-        },
-        {
-          label: '性别',
-          value: 'gender',
-          edit: false
-        },
-        {
-          label: '政治面貌',
-          value: 'politics',
-          edit: false
-        },
-        {
-          label: '电话号码',
-          value: 'phone',
-          edit: false
-        },
-        {
-          label: '民族',
-          value: 'nation',
-          edit: false
-        },
-        {
-          label: '邮箱地址',
-          value: 'email',
-          edit: false
-        },
-        {
-          label: '身份证号',
-          value: 'idCard',
-          edit: false
-        },
-        {
-          label: '婚姻',
-          value: 'marriage',
-          edit: false
-        },
-        {
-          label: '爱好',
-          value: 'hobby',
-          edit: false
-        },
-        {
-          label: '特长',
-          value: 'speciality',
-          edit: false
-        },
-        {
-          label: '籍贯',
-          value: 'native',
-          edit: false
-        },
-        {
-          label: '现住地址',
-          value: 'address',
-          edit: false
-        }
-      ],
-      form: {}
+      action: fileURL,
+      form: {
+        // imageInfo: '',
+        // name: '',
+        // phoneNumber: '',
+        // email: '',
+        // personalProfile: ''
+      },
+      oldForm: {}
+    }
+  },
+  computed: {
+    token() {
+      const token = getToken()
+      return `Bearer ${token}`
     }
   },
   created() {
@@ -140,17 +113,68 @@ export default {
   },
   methods: {
     fetchData() {
-      getUserArchives().then(response => {
+      api.peoGetstaff({ id: this.$store.getters.userId }).then(response => {
         // console.log(response)
-        this.form = response.data.items.user
-        // this.form.state = '1'
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.form = response.data.resData === null ? {} : response.data.resData
+          this.oldForm = JSON.parse(JSON.stringify(response.data.resData)) === null ? {} : response.data.resData
+        }
       })
     },
-    // ok按钮
-    editSubmit(item) {
-      item.edit = false
+    imgSrc(imageInfo) {
+      return `${APIconfig.baseUrl}/${imageInfo}`
+    },
+    // 上传成功
+    handleSuccess(response, file) {
+      if (!response.success) {
+        return this.$message.error(response.errMsg)
+      }
+      this.form.headIcon = response.resData[0].filePath
+    },
+    // 上传的动作
+    beforeUpload(file) {
+      const typeCheck = file.type === 'image/jpeg' || file.type === 'image/png'
+      if (!typeCheck) {
+        this.$message.error('上传图片只支持 JPG 或PNG 格式!')
+        return new Promise((resolve, reject) => {
+          reject(false)
+        })
+      }
+    },
+    onSubmit() {
+      console.log(this.form)
+      api.updataAccount(this.form).then(response => {
+        // console.log(response)
+        if (response.success === true) {
+          this.$message({
+            message: '修改成功',
+            type: 'success'
+          })
+          this.$store.commit('user/SET_AVATAR', this.form.headIcon)
+          this.oldForm = JSON.parse(JSON.stringify(this.form))
+        }
+      })
+      // api.peoRevisestaff(this.form).then(res => {
+      //   if (res.code === '200' && res.data.busiCode === '1') {
+      //     this.$store.commit('user/SET_AVATAR', this.form.imageInfo)
+      //     this.form = res.data
+      //     this.oldForm = JSON.parse(JSON.stringify(res.data))
+      //     this.$message({
+      //       message: '保存成功',
+      //       type: 'success'
+      //     })
+      //   } else {
+      //     this.$message({
+      //       message: '保存失败，请重试',
+      //       type: 'error'
+      //     })
+      //   }
+      // })
+    },
+    onCancel() {
+      this.form = JSON.parse(JSON.stringify(this.oldForm))
       this.$message({
-        message: item.label + '修改成功',
+        message: '取消成功',
         type: 'success'
       })
     }
@@ -163,60 +187,38 @@ i {
   vertical-align: middle;
 }
 .archives-container {
-  padding: 30px;
-  background-color:#F0F2F5;
   min-height: calc(100vh - 50px);
+  background-color:#F0F2F5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .box {
   background:rgba(255,255,255,1);
   box-shadow:4px 4px 40px 0px rgba(0,0,0,0.05);
   border-radius:6px;
-  padding: 20px 30px 10px;
+  padding: 30px;
   margin-bottom: 20px;
   position: relative;
   .title {
+    font-weight: 600;
+    color: #666;
     font-size:20px;
     // color:rgba(153,153,153,1);
     line-height:24px;
     display: block;
     text-align: center;
   }
-  .editBox {
-  width:59px;
-  height:24px;
-  background:rgba(64,158,255,1);
-  box-shadow:-4px 4px 10px 0px rgba(0,0,0,0.1);
-  border-radius:4px 0px 0px 4px;
-  position: absolute;
-  top: 20px;
-  right: 0;
-  color: #fff;
-  padding: 2px 6px;
-  display: none;
-  .editBoxBg {
-    width:59px;
-    height:24px;
-    position: absolute;
-    top: 0;
-    left: 0;
-    cursor: pointer;
-    z-index: 5;
-  }
-    span {
-      font-size: 12px;
-      display: inline-block;
-      height: 16px;
-      line-height: 16px;
-    }
-  }
-  &:hover .editBox {
-    display: block;
-  }
+}
+.uploadIcon {
+  font-size: 30px;
 }
 .user {
   .userImgBox {
     position: relative;
     width: 190px;
+    height: 190px;
+    border-radius: 190px;
     margin: 0 auto 20px;
     .upload {
       position: absolute;
@@ -248,13 +250,9 @@ i {
 .row {
   margin-bottom: 20px;
 }
-.el-button {
-  height: 32px;
-  width: 100%;
-  padding: 8px 0;
-}
-::v-deep .el-input__inner{
-  padding: 0 10px;
+::v-deep .el-input__inner,
+::v-deep .el-textarea__inner{
+  // padding: 0 10px;
   width: 90%;
 }
 .label,

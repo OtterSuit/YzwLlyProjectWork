@@ -4,7 +4,7 @@
     <setting />
     <!-- 右侧分类组件end -->
     <!-- 物资管理页面 -->
-    <classify :title="title" />
+    <classify />
     <!-- 物资管理页面end -->
   </div>
 </template>
@@ -18,7 +18,6 @@ export default {
   },
   data() {
     return {
-      title: '基本物资管理'
     }
   }
 }

@@ -4,12 +4,15 @@
       <el-tabs v-model="activeName" tab-position="left" style="height:100%">
         <el-tab-pane label="质量评价指标统计" name="evaluate" />
         <el-tab-pane label="质量监测统计" name="monitor" />
-        <el-tab-pane label="清洗不合格统计" name="cleaning" />
-        <el-tab-pane label="包装不合格统计" name="bundle" />
-        <el-tab-pane label="灭菌不合格统计" name="antisepsis" />
+        <el-tab-pane label="湿包发生率统计" name="wet" />
+        <el-tab-pane label="清洗合格率统计" name="cleaning" />
+        <el-tab-pane label="器械包装合格率统计" name="bundle" />
+        <el-tab-pane label="无菌物品合格率统计" name="antisepsis" />
         <el-tab-pane label="器械丢失统计" name="lost" />
         <el-tab-pane label="器械报损统计" name="damage" />
+        <el-tab-pane label="不良事件报告统计" name="badevent" />
         <el-tab-pane label="设备维修统计" name="maintain" />
+        <el-tab-pane label="发放合格率" name="delivery" />
       </el-tabs>
     </div>
     <div style="margin-left:230px">
@@ -29,10 +32,12 @@ import antisepsis from './antisepsis'
 import lost from './lost'
 import damage from './damage'
 import maintain from './maintain'
-
+import delivery from './delivery'
+import badevent from './badevent'
+import wet from './wet'
 export default {
   components: {
-    evaluate, monitor, cleaning, bundle, antisepsis, lost, damage, maintain
+    evaluate, monitor, cleaning, bundle, antisepsis, lost, damage, maintain, delivery, badevent, wet
   },
   data() {
     return {
@@ -45,7 +50,9 @@ export default {
         antisepsis: 'antisepsis',
         lost: 'lost',
         damage: 'damage',
-        maintain: 'maintain'
+        maintain: 'maintain',
+        badevent: 'badevent',
+        wet: 'wet'
       }
     }
   },

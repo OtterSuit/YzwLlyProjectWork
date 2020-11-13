@@ -1,11 +1,15 @@
 <template>
   <div class="delivery-container">
+    <!-- 头部 -->
     <myfilters
       title="灭菌详情"
-      content="NO.0033124"
+      :content="content"
       :back-button="true"
     />
-    <el-form ref="recordForm" :model="recordForm" label-width="70px">
+    <!-- 头部结束 -->
+    <!-- 表单 -->
+    <el-form ref="recordForm" v-loading="listLoading" :model="recordForm" label-width="90px">
+      <!-- 设备信息 -->
       <div class="main-box">
         <div class="main-box-title">
           设备信息
@@ -13,59 +17,61 @@
         <el-row :gutter="50">
           <el-col :span="6">
             <el-form-item label="设备名称">
-              <span>{{ recordForm.equipment }}</span>
+              <span>{{ recordForm.boxName }}</span>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="灭菌炉次">
-              <span>{{ recordForm.furnaceTime }}</span>
+              <span>{{ recordForm.batchNoDay }}</span>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="开炉时间">
-              <span>{{ recordForm.furnaceStart }}</span>
+              <span>{{ recordForm.sterilizeStartTime }}</span>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="灭菌人">
-              <span>{{ recordForm.antisepsisPerson }}</span>
+              <span>{{ recordForm.sterilizeUser }}</span>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="50">
           <el-col :span="6">
             <el-form-item label="灭菌炉号">
-              <span>{{ recordForm.furnaceNum }}</span>
+              <span>{{ recordForm.code }}</span>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="灭菌程序">
-              <span>{{ recordForm.program }}</span>
+              <span>{{ recordForm.sterilizeProgramName }}</span>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="结束时间">
-              <span>{{ recordForm.furnaceEnd }}</span>
+              <span>{{ recordForm.sterilizeEndTime }}</span>
             </el-form-item>
           </el-col>
           <el-col :span="6">
             <el-form-item label="核对人">
-              <span>{{ recordForm.checkPerson }}</span>
+              <span>{{ recordForm.checkUser }}</span>
             </el-form-item>
           </el-col>
         </el-row>
       </div>
+      <!-- 灭菌物品 -->
       <div class="main-box">
         <div class="main-box-title">
           灭菌物品
         </div>
-        <el-table :data="tableData" style="width: 100%">
-          <el-table-column type="index" label="序号" width="100px" />
-          <el-table-column label="编号" prop="id" />
-          <el-table-column label="名称" prop="name" />
-          <el-table-column label="数量" prop="count" />
+        <el-table v-loading="listLoading" :data="tableData" style="width: 100%">
+          <el-table-column type="index" label="序号" width="100" />
+          <el-table-column label="编号" prop="serialNumber" />
+          <el-table-column label="名称" prop="packetDefineName" />
+          <el-table-column label="数量" prop="packetInstancesCount" />
         </el-table>
       </div>
+      <!-- 物理监测 -->
       <div class="main-box" style="padding-bottom:0">
         <div class="main-box-title">物理监测</div>
         <el-row>
@@ -83,7 +89,7 @@
               </el-col>
               <el-col :span="8">
                 <el-form-item label="灭菌时间">
-                  <span>{{ recordForm.antisepsisTime }} </span>
+                  <span>{{ recordForm.sterilizeTimeLen }} </span>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -100,102 +106,147 @@
               </el-col>
               <el-col :span="8">
                 <el-form-item label="干燥时间">
-                  <span>{{ recordForm.dryTime }} </span>
+                  <span>{{ recordForm.dryTimeLen }} </span>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="8">
+                <el-form-item label="监测效果">
+                  <span>{{ state(recordForm.physicsResult) }} </span>
+                </el-form-item>
+              </el-col>
+              <el-col v-if="recordForm.physicsReason" :span="12">
+                <el-form-item label="不合格原因">
+                  <span>{{ ssd_qt_physics_reason[recordForm.physicsReason] }}</span>
                 </el-form-item>
               </el-col>
             </el-row>
           </el-col>
           <el-col :span="6">
-            <el-form-item label="参考图片">
-              <img src="@/assets/images/erwm.png" alt="" height="100">
+            <el-form-item label="参数图片">
+              <img
+                class="main-box-img"
+                :src="imgSrc(recordForm.physicsImageInfo)"
+                @click="imgClick(recordForm.physicsImageInfo)"
+              >
             </el-form-item>
           </el-col>
         </el-row>
       </div>
+      <!-- 化学监测 -->
       <div class="main-box">
         <div class="main-box-title">化学监测</div>
         <el-row>
-          <el-form-item label="监测效果">
-            <span>{{ state(recordForm.chemicalQuality) }}</span>
-          </el-form-item>
+          <el-col :span="8">
+            <el-form-item label="监测效果">
+              <span>{{ state(recordForm.chemistryResult) }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col v-if="recordForm.chemistryReason" :span="8">
+            <el-form-item label="不合格原因">
+              <span>{{ ssd_qt_chemistry_reason[recordForm.chemistryReason] }}</span>
+            </el-form-item>
+          </el-col>
         </el-row>
         <el-row>
           <el-form-item label="结果照片">
-            <img src="@/assets/images/erwm.png" width="100">
+            <img
+              class="main-box-img"
+              :src="imgSrc(recordForm.chemistryImageInfo)"
+              @click="imgClick(recordForm.chemistryImageInfo)"
+            >
           </el-form-item>
         </el-row>
       </div>
+      <!-- 生物监测 -->
       <div class="main-box">
         <div class="main-box-title">生物监测</div>
         <el-row>
-          <el-form-item label="监测效果">
-            <span>{{ state(recordForm.biologicalQuality) }}</span>
-          </el-form-item>
+          <el-col :span="8">
+            <el-form-item label="监测效果">
+              <span>{{ state(recordForm.biologyReuslt) }}</span>
+            </el-form-item>
+          </el-col>
+          <el-col v-if="recordForm.biologyReason" :span="8">
+            <el-form-item label="不合格原因">
+              <span>{{ ssd_qt_biology_reason[recordForm.biologyReason] }}</span>
+            </el-form-item>
+          </el-col>
         </el-row>
         <el-row>
           <el-form-item label="结果照片">
-            <img src="@/assets/images/erwm.png" alt="" width="100" @click="handleImg('@/assets/images/erwm.png')">
+            <img
+              class="main-box-img"
+              :src="imgSrc(recordForm.biologyImageInfo)"
+              @click="imgClick(recordForm.biologyImageInfo)"
+            >
           </el-form-item>
         </el-row>
       </div>
     </el-form>
+    <!-- 表单结束 -->
     <el-image-viewer
-      v-show="imgShow"
+      v-if="imgShow"
       :on-close="viewerClose"
-      :url-list="[imgSrc]"
+      :url-list="srcList"
     />
   </div>
 </template>
 
 <script>
 import myfilters from '@/components/myfilters'
-
+import api from '@/api'
+import APIconfig from '@/api/APIconfig'
 export default {
   components: {
     myfilters
   },
   data() {
     return {
-      imgShow: false,
-      imgSrc: 'https://fuss10.elemecdn.com/8/27/f01c15bb73e1ef3793e64e6b7bbccjpeg.jpeg',
-      recordForm: {
-        equipment: '灭菌设备012',
-        date: '2020.08.10 09:35',
-        furnaceNum: '012',
-        furnaceStart: '2020.08.10 09:35:12',
-        program: 'B-D',
-        furnaceTime: '2',
-        furnaceEnd: '2020.08.10 09:39:19',
-        minTemperature: '134.6',
-        minPressure: '212.3',
-        antisepsisTime: '180',
-        maxTemperature: '135',
-        maxPressure: '215.1',
-        dryTime: '90',
-        antisepsisPerson: '赵美丽',
-        checkPerson: '张萌萌',
-        physicalQuality: '1',
-        chemicalQuality: '1',
-        biologicalQuality: '2',
-        physicalReason: '',
-        chemicalReason: '',
-        biologicalReason: ''
-      },
-      tableData: [
-        {
-          id: 10001,
-          name: '糖足包',
-          count: 10
-        },
-        {
-          id: 10002,
-          name: '脐穿包',
-          count: 10
-        }
-      ]
+      imgShow: false, // 显示照片
+      recordForm: {}, // 表单信息
+      tableData: [], // 物品信息
+      srcList: [], // 图片信息
+      listLoading: true,
+      ssd_qt_biology_reason: null,
+      ssd_qt_chemistry_reason: null,
+      ssd_qt_physics_reason: null
     }
   },
+  computed: {
+    content() {
+      return this.$route.query.id
+    }
+  },
+  created() {
+    this.fetchData()
+  },
   methods: {
+    // 获取数据
+    fetchData() {
+      this.listLoading = true
+      // 获取记录表详情
+      api.getQualityDetail({ id: this.$route.query.id }).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.recordForm = response.data.entity
+          this.ssd_qt_physics_reason = response.data.dictData.ssd_qt_physics_reason
+          this.ssd_qt_biology_reason = response.data.dictData.ssd_qt_biology_reason
+          this.ssd_qt_chemistry_reason = response.data.dictData.ssd_qt_chemistry_reason
+          this.listLoading = false
+        }
+      })
+      this.listLoading = true
+      // 获取包
+      api.toDefinedLoadingPacket({ id: this.$route.query.id }).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.records
+          this.listLoading = false
+        }
+      })
+    },
+    // 质量
     state(quality) {
       const stateMap = {
         '1': '合格',
@@ -203,11 +254,21 @@ export default {
       }
       return stateMap[quality]
     },
-    handleImg(src) {
+    // 图片查看
+    imgClick(url) {
+      this.srcList = []
+      this.srcList.push(this.imgSrc(url))
       this.imgShow = true
     },
+    // 图片查看关闭
     viewerClose() {
       this.imgShow = false
+    },
+    // 图片url
+    imgSrc(imageInfo) {
+      if (imageInfo) {
+        return `${APIconfig.baseUrl}/${imageInfo}`
+      }
     }
   }
 }
@@ -234,6 +295,10 @@ export default {
     text-align: left;
     color: #9EAEC3;
     font-weight: normal;
+  }
+  .main-box-img{
+    width: 150px;
+    cursor:pointer
   }
 }
 img:hover {

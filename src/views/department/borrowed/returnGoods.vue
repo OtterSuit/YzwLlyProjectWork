@@ -103,7 +103,7 @@
             <el-table-column label="包编码" width="260px" />
             <el-table-column label="包名称" />
           </el-table>
-          <div style="width:390px; margin:15px 150px">
+          <div class="dialog-packet">
             <el-input v-model="dialogCoding" placeholder="请输入或扫描包编码" @change="codeChange" />
           </div>
           <el-scrollbar style="height:410px;background: #fff">
@@ -266,9 +266,6 @@ export default {
 }
 ::v-deep .el-scrollbar__wrap {
   overflow-x: hidden;
-}
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
 }
 ::v-deep .hidden-radio .el-radio__label {
   display: none;

@@ -9,8 +9,7 @@
       addifo="添加记录"
       add-icon="el-icon-plus"
       :add-button="true"
-      format="yyyy.MM.dd"
-      placeholder="回收人/清洗人"
+      placeholder="清洗人"
       :search-content="true"
       @addClick="addClick"
       @contentChange="contentChange"
@@ -19,86 +18,108 @@
     />
     <!-- 头部end -->
     <!-- table -->
-    <el-table :data="tableData" style="width: 100%">
+    <el-table
+      v-loading="listLoading"
+      :data="tableData"
+      style="width: 100%"
+    >
       <el-table-column type="expand">
         <template slot-scope="props">
           <el-form label-position="left" inline class="demo-table-expand">
-            <el-form-item v-if="rowLength(props.row.maintenance,'maintenance')!==0" label="维修">
-              <span v-for="item in props.row.maintenance" :key="item.name">
-                <span v-if="item.type==='maintenance'" class="expand-span">{{ item.name }}x{{ item.num }}</span>
+            <el-form-item v-if="props.row.maintainCount!=='0'" label="维修">
+              <span v-for="item in props.row.supplies" :key="item.suppliesName">
+                <span v-if="item.errorType==='1'" class="expand-span">{{ item.suppliesName }}x{{ item.errorCount }}</span>
               </span>
             </el-form-item>
-            <el-form-item v-if="rowLength(props.row.maintenance,'scrap')!==0" label="报废">
-              <span v-for="item in props.row.maintenance" :key="item.name">
-                <span v-if="item.type==='scrap'" class="expand-span">{{ item.name }}x{{ item.num }}</span>
+            <el-form-item v-if="props.row.scrapCount!=='0'" label="报废">
+              <span v-for="item in props.row.supplies" :key="item.suppliesName">
+                <span v-if="item.errorType==='2'" class="expand-span">{{ item.suppliesName }}x{{ item.errorCount }}</span>
               </span>
             </el-form-item>
           </el-form>
         </template>
       </el-table-column>
       <el-table-column label="序号" type="index" width="100" />
+      <el-table-column label="编号" prop="cleanSubTaskId" />
       <el-table-column label="清洗框/架">
         <template slot-scope="scope">
-          {{ scope.row.cleaningBox }}<br>
-          <span class="second-row">{{ scope.row.code }}</span>
+          {{ scope.row.cleanboxName }}<br>
+          <span class="second-row">{{ scope.row.cleanboxCode }}</span>
         </template>
       </el-table-column>
       <el-table-column label="清洗人/时间">
         <template slot-scope="scope">
-          {{ scope.row.cleanPerson }}<br>
-          <span class="second-row">{{ scope.row.cleanTime }}</span>
+          {{ scope.row.cleanSubTaskLastUser }}<br>
+          <span class="second-row">{{ scope.row.cleanSubTaskLastTime }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="维修">
-        <template slot-scope="scope">
-          {{ rowLength(scope.row.maintenance,'maintenance') }}
-        </template>
-      </el-table-column>
-      <el-table-column label="报废">
-        <template slot-scope="scope">
-          {{ rowLength(scope.row.maintenance,'scrap') }}
-        </template>
-      </el-table-column>
+      <el-table-column label="维修" prop="maintainCount" />
+      <el-table-column label="报废" prop="scrapCount" />
     </el-table>
     <!-- table end -->
+    <my-pagination :total="totalCount" methods="getCleanErrorPage" :conditions="conditions" :records="['data','page','records']" />
     <!-- 弹窗 -->
-    <el-dialog v-el-drag-dialog title="添加记录" :visible.sync="show" width="800px">
+    <el-dialog v-el-drag-dialog title="添加记录" :visible.sync="show" width="1000px">
       <div class="dialog-main">
         <el-scrollbar>
-          <el-form ref="form" :model="form" label-width="80px" class="scrollbar-form">
+          <el-form ref="form" :model="form" label-width="120px" class="scrollbar-form" :rules="rules">
             <el-row type="flex">
-              <el-col :span="24">
-                <el-form-item label="清洗架">
-                  <el-select v-model="form.cleaningBox" placeholder="请选择">
+              <el-col :span="22">
+                <el-form-item
+                  label="清洗任务单号"
+                  prop="cleanSubTaskId"
+                >
+                  <el-select
+                    v-model="form.cleanSubTaskId"
+                    filterable
+                    remote
+                    reserve-keyword
+                    placeholder=""
+                    :remote-method="remoteMethodCleanId"
+                    :loading="loading"
+                    @change="selectChange($event)"
+                  >
                     <el-option
-                      v-for="item in cleaningBoxOptions"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
+                      v-for="item in cleanIdOptions"
+                      :key="item.id"
+                      :label="item.id"
+                      :value="item.id"
                     />
                   </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-row v-for="(item,index) in form.maintenance" :key="item.type+index" type="flex" :gutter="10">
-              <el-col :span="12">
-                <el-form-item label="器械名字">
-                  <el-input v-model="item.name" placeholder="请输入" />
+            <el-row v-for="(item,index) in form.errors" v-show="form.cleanSubTaskId!==''" :key="item.errorType+index" type="flex" :gutter="10">
+              <el-col :span="9">
+                <el-form-item
+                  label="器械名字"
+                  :prop="'errors.'+index+'.suppliesId'"
+                  :rules="[
+                    { required: true, message: '请选择器械', trigger: ['blur','change'] }
+                  ]"
+                >
+                  <el-select v-model="item.suppliesId" placeholder="请选择" @change="instanceChange(item)">
+                    <el-option
+                      v-for="it in instanceOptions"
+                      :key="it.id"
+                      :label="getOption(it)"
+                      :value="it.id"
+                    />
+                  </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="5">
-                <el-input v-model="item.num" placeholder="请输入数量" />
+                <el-input-number v-model.number="item.errorCount" placeholder="请输入数量" :min="1" :max="getMax(item)" controls-position="right" />
+              </el-col>
+              <el-col :span="3">
+                <el-form-item label="器械总数" label-width="90px">
+                  {{ getTotal(item) }}
+                </el-form-item>
               </el-col>
               <el-col :span="5">
-                <el-select v-model="item.type" placeholder="请选择">
-                  <el-option
-                    label="维修"
-                    value="maintenance"
-                  />
-                  <el-option
-                    label="报废"
-                    value="scrap"
-                  />
+                <el-select v-model="item.errorType" placeholder="请选择">
+                  <el-option label="维修" value="1" />
+                  <el-option label="报废" value="2" />
                 </el-select>
               </el-col>
               <el-col :span="1">
@@ -113,7 +134,7 @@
       </div>
       <div slot="footer" class="dialog-footer">
         <el-button type="bgc" @click="show=false">取消</el-button>
-        <el-button type="primary" @click="addSubmit">确认</el-button>
+        <el-button type="primary" :loading="buttonLoading" @click="addSubmit">确认</el-button>
       </div>
     </el-dialog>
     <!-- 弹窗end -->
@@ -122,185 +143,182 @@
 
 <script>
 import myfilters from '@/components/myfilters'
+import myPagination from '@/components/MyPagination'
+import api from '@/api'
 export default {
   components: {
-    myfilters
+    myfilters, myPagination
   },
   data() {
     return {
+      listLoading: true,
+      buttonLoading: false,
       form: {
-        cleaningBox: '',
-        maintenance: [
-          {
-            name: '',
-            num: '',
-            type: 'maintenance'
-          }
+        cleanSubTaskId: '',
+        errors: []
+      },
+      rules: {
+        cleanSubTaskId: [
+          { required: true, message: '请输入清洗任务单号', trigger: ['blur', 'change'] }
         ]
       },
+      instanceOptions: [],
       show: false,
-      cleaningBoxOptions: [
-        {
-          value: '架01',
-          label: '架01'
-        },
-        {
-          value: '架02',
-          label: '架02'
-        },
-        {
-          value: '架03',
-          label: '架03'
-        },
-        {
-          value: '架04',
-          label: '架04'
-        }
-      ],
-      tableData: [
-        {
-          cleaningBox: '架01',
-          code: 'MJJ001',
-          cleanPerson: '赵美丽',
-          cleanTime: '2020.08.10 09:45:32',
-          maintenance: [
-            {
-              name: '五官小弯剪',
-              num: 1,
-              type: 'maintenance'
-            },
-            {
-              name: '弯钳(16cm以上)',
-              num: 1,
-              type: 'scrap'
-            },
-            {
-              name: '无齿镊(16cm以上)',
-              num: 1,
-              type: 'scrap'
-            }
-          ]
-        },
-        {
-          cleaningBox: '架02',
-          code: 'MJJ002',
-          cleanPerson: '赵美丽',
-          cleanTime: '2020.08.10 09:45:32',
-          maintenance: [
-            {
-              name: '弯钳(16cm以上)',
-              num: 1,
-              type: 'scrap'
-            }
-          ]
-        },
-        {
-          cleaningBox: '架04',
-          code: 'MJJ004',
-          cleanPerson: '赵美丽',
-          cleanTime: '2020.08.10 09:45:32',
-          maintenance: [
-            {
-              name: '五官小弯剪',
-              num: 1,
-              type: 'maintenance'
-            },
-            {
-              name: '正畸剪',
-              num: 1,
-              type: 'maintenance'
-            },
-            {
-              name: '无齿镊(16cm以上)',
-              num: 1,
-              type: 'maintenance'
-            },
-            {
-              name: '眼科小剪',
-              num: 1,
-              type: 'maintenance'
-            },
-            {
-              name: '弯止血钳',
-              num: 1,
-              type: 'maintenance'
-            },
-            {
-              name: '弯钳(16cm以上)',
-              num: 1,
-              type: 'scrap'
-            }
-          ]
-        }
-      ]
+      cleaningBoxOptions: [],
+      cleanIdOptions: [],
+      loading: false,
+      tableData: [],
+      totalCount: 0,
+      conditions: {
+        cleanboxId: null,
+        cleanSubTaskLastUserFuzzy: null,
+        cleanSubTaskLastTimeOneDay: null
+      }
     }
   },
   computed: {
     // 计算tableData有几条数据
     content() {
-      return '共' + this.tableData.length + '条数据'
+      return '共' + this.totalCount + '条数据'
     }
   },
+  created() {
+    this.fetchData()
+  },
+  inject: ['reload'],
   methods: {
-    // 返回维修和报废的数量
-    rowLength(row, str) {
-      let length = 0
-      row.forEach(element => {
-        if (element.type === str) {
-          length += 1
+    fetchData() {
+      this.listLoading = true
+      api.getCleanErrorPage().then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.page.records
+          this.totalCount = response.data.page.totalCount
+          this.listLoading = false
         }
       })
-      return length
     },
-    // 添加记录按钮
+    remoteMethodCleanId(query) {
+      console.log(query)
+      if (query !== '') {
+        this.loading = true
+        api.getCleanTask({ cleanSubTaskId: query }).then(response => {
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.cleanIdOptions = response.data.page.records
+            this.loading = false
+          }
+        })
+      } else {
+        this.cleanIdOptions = []
+      }
+    },
+    getOption(item) {
+      return item.name
+    },
+    getMax(item) {
+      return item.maxCount === undefined ? 1 : item.maxCount
+    },
+    getTotal(item) {
+      console.log(item.totalCount)
+      return item.totalCount === undefined ? 1 : item.totalCount
+    },
+    selectChange(select) {
+      api.getSubSupplies({ id: select }).then(response => {
+        console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.instanceOptions = response.data.entity
+          this.form.errors = [
+            {
+              suppliesName: '',
+              suppliesId: '',
+              errorCount: null,
+              errorType: '1'
+            }
+          ]
+        }
+      })
+    },
+    instanceChange(item) {
+      this.instanceOptions.forEach(element => {
+        if (item.suppliesId === element.id) {
+          console.log(item)
+          item.suppliesName = element.name
+          item.maxCount = element.count
+          item.totalCount = element.count
+        }
+      })
+      console.log(item)
+    },
     addClick() {
       this.form = {
-        cleaningBox: '',
-        maintenance: [
-          {
-            name: '',
-            num: '',
-            type: 'maintenance'
-          }
-        ]
+        cleanSubTaskId: '',
+        errors: []
       }
       this.show = true
     },
     // 添加记录弹窗确认按钮
     addSubmit() {
-      this.$message({
-        message: '添加成功',
-        type: 'success'
+      console.log(this.form)
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          this.buttonLoading = true
+          api.toMaintainClean(this.form).then(response => {
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.$message({
+                message: '添加成功',
+                type: 'success'
+              })
+              this.buttonLoading = false
+              this.show = false
+              this.reload()
+            }
+          })
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
-      this.form.code = 'MJJ0' + this.form.cleaningBox.substring(1, 3)
-      this.form.cleanPerson = '赵美丽'
-      this.form.cleanTime = '2020.08.10 09:45:32'
-      this.tableData.push(this.form)
-      this.show = false
     },
     // 弹窗内添加器械名字右侧+添加按钮
     addItem() {
-      this.form.maintenance.push({
-        name: '',
-        num: '',
-        type: 'maintenance'
+      this.form.errors.push({
+        suppliesName: '',
+        suppliesId: '',
+        errorCount: null,
+        errorType: '1'
       })
     },
     // 弹窗内添加器械名字右侧删除按钮
     deleteItem(item, index) {
-      this.form.maintenance.splice(index, 1)
+      this.form.errors.splice(index, 1)
     },
     // 输入框改变
     contentChange(content) {
-      console.log(content)
+      this.$set(this.conditions, 'cleanSubTaskLastUserFuzzy', content)
+      this.headselectChange()
     },
     // 时间改变
     dateChange(date) {
-      console.log(date)
+      this.$set(this.conditions, 'cleanSubTaskLastTimeOneDay', date)
+      this.headselectChange()
     },
     // 清洗框改变
     cleaningBoxChange(cleaningBox) {
-      console.log(cleaningBox)
+      this.$set(this.conditions, 'cleanboxId', cleaningBox)
+      this.headselectChange()
+    },
+    headselectChange() {
+      this.$set(this.conditions, 'pageNo', 1)
+      this.listLoading = true
+      api.getCleanErrorPage(this.conditions).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.page.records
+          this.totalCount = response.data.page.totalCount
+          this.listLoading = false
+        }
+      })
     }
   }
 }

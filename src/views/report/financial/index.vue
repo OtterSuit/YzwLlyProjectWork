@@ -3,11 +3,11 @@
     <div class="tabs-main">
       <el-tabs v-model="activeName" tab-position="left" style="height:100%">
         <el-tab-pane label="核算月报" name="account" />
-        <el-tab-pane label="发货物品统计月报" name="delivery" />
+        <el-tab-pane label="发放物品统计月报" name="delivery" />
         <el-tab-pane label="借还物品统计" name="borrowed" />
         <el-tab-pane label="出/入库物品统计" name="io" />
         <el-tab-pane label="签收统计" name="returnGoods" />
-        <el-tab-pane label="退货统计" name="sign" />
+        <el-tab-pane label="退回统计" name="sign" />
       </el-tabs>
     </div>
     <div style="margin-left:230px">

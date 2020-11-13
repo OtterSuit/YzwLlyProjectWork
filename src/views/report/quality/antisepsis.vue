@@ -54,6 +54,8 @@ export default {
         const header = ['项目明细', '数量', '单价', '金额']
         const filterVal = ['detail', 'count', 'singlePrice', 'totalPrice']
         const data = this.formatJson(filterVal)
+        console.log(this.tableData)
+        console.log(data)
         const merges = ['A1:D1']
         excel.export_json_to_excel({
           multiHeader,

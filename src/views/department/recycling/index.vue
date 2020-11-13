@@ -8,32 +8,30 @@
       :choose-date="true"
       :add-button="true"
       :choose-status="true"
-      :choose-states="true"
-      add-icon="el-icon-circle-plus-outline"
       addifo="回收申请"
       :status-options="statusOptions"
-      :states-options="statesOptions"
-      format="yyyy.MM.dd"
       :search-content="true"
       @contentChange="contentChange"
       @dateChange="dateChange"
       @statusChange="statusChange"
-      @statesChange="statesChange"
       @addClick="applyClick"
     />
     <!-- 头部 end -->
     <!-- table -->
-    <el-table :data="tableData" style="width: 100%">
+    <el-table v-loading="listLoading" :data="tableData" style="width: 100%">
       <el-table-column label="序号" type="index" width="100" />
-      <el-table-column prop="orderNum" label="订单编号" width="110" />
-      <el-table-column prop="applyType" label="申请类别" />
-      <el-table-column prop="applicant" label="申请人" />
+      <el-table-column prop="id" label="订单编号" />
+      <el-table-column prop="applyUserid" label="申请人" />
       <el-table-column prop="applyTime" label="申请时间" />
       <el-table-column label="状态">
         <template slot-scope="scope">
-          <div :class="stateColor(scope.row.state)">
-            <i :class="stateIcon(scope.row.state)" />
-            {{ state(scope.row.state) }}
+          <div v-if="countingstatus.includes(scope.row.currentStatus)" :class="stateColor('5')">
+            <i :class="stateIcon('5')" />
+            {{ ssd_workorder_status['5'] }}
+          </div>
+          <div v-else :class="stateColor(scope.row.currentStatus)">
+            <i :class="stateIcon(scope.row.currentStatus)" />
+            {{ ssd_workorder_status[scope.row.currentStatus] }}
           </div>
         </template>
       </el-table-column>
@@ -57,135 +55,84 @@
                 }"
               >查看详细</el-dropdown-item>
               <el-dropdown-item
-                :disabled="scope.row.state!=='2'"
+                :disabled="scope.row.currentStatus!=='4'"
                 :command="{
                   index: scope.$index,
                   row: scope.row,
                   action: 'handleCancel'
                 }"
               >取消申请</el-dropdown-item>
-              <el-dropdown-item
+              <!-- <el-dropdown-item
+                :disabled="scope.row.currentStatus!=='4'"
                 :command="{
                   index: scope.$index,
                   row: scope.row,
                   action: 'handleGoods'
                 }"
-              >发货</el-dropdown-item>
+              >发放</el-dropdown-item> -->
             </el-dropdown-menu>
           </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
     <!-- table end -->
+    <my-pagination :total="totalCount" methods="toShowPage" :conditions="conditions" />
   </div>
 </template>
 
 <script>
 import myfilters from '@/components/myfilters'
+import myPagination from '@/components/MyPagination'
+import api from '@/api'
 
 export default {
   components: {
-    myfilters
+    myfilters, myPagination
   },
   data() {
     return {
-      statesOptions: [
-        {
-          value: '全部状态',
-          label: '全部状态'
-        },
-        {
-          value: '已收货',
-          label: '已收货'
-        },
-        {
-          value: '已申请，待发货',
-          label: '已申请，待发货'
-        },
-        {
-          value: '已发货，待签收',
-          label: '已发货，待签收'
-        },
-        {
-          value: '已回收，待清洗',
-          label: '已回收，待清洗'
-        },
-        {
-          value: '已清洗，待灭菌',
-          label: '已清洗，待灭菌'
-        },
-        {
-          value: '已灭菌，待发货',
-          label: '已灭菌，待发货'
-        }
-      ],
-      statusOptions: [
-        {
-          value: '全部类别',
-          label: '全部类别'
-        },
-        {
-          value: '回收申请',
-          label: '回收申请'
-        },
-        {
-          value: '还物回收申请',
-          label: '还物回收申请'
-        }
-      ],
-      tableData: [
-        {
-          orderNum: '10001',
-          applyType: '回收申请',
-          applicant: '张美华',
-          applyTime: '2020.08.10 09:54:12',
-          state: '1'
-        },
-        {
-          orderNum: '10001',
-          applyType: '还物回收申请',
-          applicant: '陈春兰',
-          applyTime: '2020.08.10 09:54:12',
-          state: '2'
-        },
-        {
-          orderNum: '10001',
-          applyType: '还物回收申请',
-          applicant: '李刚',
-          applyTime: '2020.08.10 09:54:12',
-          state: '3'
-        },
-        {
-          orderNum: '10001',
-          applyType: '还物回收申请',
-          applicant: '刘玉玲',
-          applyTime: '2020.08.10 09:54:12',
-          state: '4'
-        },
-        {
-          orderNum: '10001',
-          applyType: '还物回收申请',
-          applicant: '刘玉玲',
-          applyTime: '2020.08.10 09:54:12',
-          state: '5'
-        },
-        {
-          orderNum: '10001',
-          applyType: '还物回收申请',
-          applicant: '李顺庭',
-          applyTime: '2020.08.10 09:54:12',
-          state: '6'
-        }
-      ]
+      listLoading: true,
+      ssd_workorder_status: null,
+      tableData: [],
+      totalCount: 0,
+      conditions: {
+        workorderType: '2',
+        currentStatus: null,
+        currentStatuses: null,
+        keyword: null,
+        applyTimeOneDay: null
+      },
+      countingstatus: ['11', '12', '13'],
+      statusOptions: {
+        10: '已取消',
+        4: '回收中',
+        5: '已回收'
+      }
     }
   },
   computed: {
     // 计算tableData有几条数据
     content() {
-      return '共' + this.tableData.length + '条数据'
+      return '共' + this.totalCount + '条数据'
     }
   },
+  created() {
+    this.fetchData()
+  },
   methods: {
+    fetchData() {
+      this.listLoading = true
+      // 显示申请的所有表单
+      api.toShowPage({ workorderType: '2' }).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.ssd_workorder_status = response.data.dictData.ssd_workorder_status
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.listLoading = false
+        }
+      })
+    },
     applyClick() {
       this.$router.push({
         name: 'DepartmentRecyclingForm'
@@ -194,74 +141,101 @@ export default {
     handleCommand({ index, row, action }) {
       this[action](index, row)
     },
-    handleDetails() {
+    handleDetails(index, row) {
       this.$router.push({
-        name: 'DepartmentRecyclingDetails'
+        name: 'DepartmentRecyclingDetails',
+        query: {
+          id: row.id
+        }
       })
     },
     handleCancel(index, row) {
-      row.state = '7'
-      this.$message({
-        message: '取消申请成功',
-        type: 'success'
+      api.toCancelRecycle({ workorderId: row.id }).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          row.currentStatus = '10'
+          this.$message({
+            message: '取消申请成功',
+            type: 'success'
+          })
+        }
       })
     },
-    handleGoods() {
+    /* handleGoods(index, row) {
       this.$router.push({
-        name: 'DepartmentDelivery'
+        name: 'DepartmentDelivery',
+        query: {
+          id: row.id
+        }
       })
-    },
-    // 输入框改变
-    contentChange(content) {
-      console.log(content)
-    },
-    dateChange(date) {
-      console.log(date)
-    },
-    statusChange(status) {
-      console.log(status)
-    },
-    statesChange(states) {
-      console.log(states)
-    },
+    }, */
     // 状态标签文字
-    state(state) {
-      const stateMap = {
-        '1': '已收货',
-        '2': '已申请，待发货',
-        '3': '已发货，待签收',
-        '4': '已回收，待清洗',
-        '5': '已清洗，待灭菌',
-        '6': '已灭菌，待发货',
-        '7': '已取消'
-      }
-      return stateMap[state]
-    },
+    // state(state) {
+    //   const stateMap = {
+    //     '1': '已签收',
+    //     '2': '已申请，待发放',
+    //     '3': '已发放，待签收',
+    //     '4': '已回收，待清洗',
+    //     '5': '已清洗，待灭菌',
+    //     '6': '已灭菌，待发放',
+    //     '7': '已取消'
+    //   }
+    //   return stateMap[state]
+    // },
     // 状态的icon
     stateIcon(state) {
       const stateMap = {
-        '1': 'el-icon-success',
-        '2': 'el-icon-time',
-        '3': 'iconfont icon-fahuo',
         '4': 'iconfont icon-huishou',
-        '5': 'iconfont icon-tubiao-',
-        '6': 'iconfont icon-miejun',
-        '7': 'el-icon-time'
+        '5': 'el-icon-success',
+        '10': 'el-icon-warning'
+        /* '2': 'el-icon-time',
+        '3': 'iconfont icon-fahuo',
+        '1': 'iconfont icon-tubiao-',
+        '6': 'iconfont icon-miejun', */
       }
       return stateMap[state]
     },
     // 状态颜色
     stateColor(state) {
       const stateMap = {
-        '1': 'success-color',
-        '2': 'base-color',
-        '3': 'goon-color',
         '4': 'goon-color',
-        '5': 'goon-color',
+        '5': 'success-color',
+        '10': 'base-color'
+        /* '2': 'base-color',
+        '1': 'goon-color',
         '6': 'goon-color',
-        '7': 'base-color'
+        '7': 'base-color' */
       }
       return stateMap[state]
+    },
+    statusChange(state) {
+      this.$set(this.conditions, 'currentStatus', null)
+      this.$set(this.conditions, 'currentStatuses', null)
+      if (state === '5') {
+        this.$set(this.conditions, 'currentStatuses', ['5', '11', '12', '13'])
+      } else {
+        this.$set(this.conditions, 'currentStatus', state)
+      }
+      this.selectChange()
+    },
+    contentChange(content) {
+      this.$set(this.conditions, 'keyword', content)
+      this.selectChange()
+    },
+    dateChange(date) {
+      this.$set(this.conditions, 'applyTimeOneDay', date)
+      this.selectChange()
+    },
+    selectChange() {
+      this.listLoading = true
+      this.$set(this.conditions, 'pageNo', 1)
+      api.toShowPage(this.conditions).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.listLoading = false
+        }
+      })
     }
   }
 }

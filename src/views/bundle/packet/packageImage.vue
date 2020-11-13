@@ -1,47 +1,29 @@
 <template>
   <div>
     <el-carousel indicator-position="outside" :autoplay="false" height="370px">
-      <el-carousel-item v-for="(item,index) in imgSrc" :key="item.src+index">
-        <img :src="item.src" class="carousel-img">
+      <el-carousel-item v-for="(item,index) in src.imagesCourse" :key="item.url+index">
+        <img :src="getImgSrc(item.url)" class="carousel-img">
       </el-carousel-item>
     </el-carousel>
   </div>
 </template>
 
 <script>
+import APIconfig from '@/api/APIconfig'
 
 export default {
-  data() {
-    return {
-      imgSrc: [
-        {
-          src: require('@/assets/images/step1.jpg')
-        },
-        {
-          src: require('@/assets/images/step2.jpg')
-        },
-        {
-          src: require('@/assets/images/step3.jpg')
-        },
-        {
-          src: require('@/assets/images/step4.jpg')
-        },
-        {
-          src: require('@/assets/images/step5.jpg')
-        },
-        {
-          src: require('@/assets/images/step6.jpg')
-        },
-        {
-          src: require('@/assets/images/step7.jpg')
-        },
-        {
-          src: require('@/assets/images/step8.jpg')
-        },
-        {
-          src: require('@/assets/images/step9.jpg')
-        }
-      ]
+  props: {
+    src: {
+      type: Object,
+      default() {
+        return {}
+      }
+    }
+  },
+  methods: {
+    // 获取图片链接
+    getImgSrc(imageInfo) {
+      return `${APIconfig.baseUrl}/${imageInfo}`
     }
   }
 }

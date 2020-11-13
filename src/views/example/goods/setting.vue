@@ -5,61 +5,65 @@
         <el-scrollbar>
           <div class="drawer-container">
             <div class="drawer-title">物资分类</div>
-            <el-input v-model="filterText" class="xd_search" />
-            <el-button type="primary" style="margin:0 0 10px 10px" @click="onFind">查找</el-button>
-            <!-- 树 -->
-            <el-tree
-              ref="tree"
-              :data="datas"
-              node-key="id"
-              :filter-node-method="filterNode"
-              :expand-on-click-node="false"
-              @node-click="handleNodeClick"
-            >
-              <div slot-scope="{node,data}" class="tree-node">
-                <div class="tree-node">
-                  <span class="node-tit">{{ data.label }}</span>
-                  <span>
-                    <el-dropdown trigger="click" @command="handleCommand">
-                      <span class="el-dropdown-link">
-                        <i class="el-icon-more more" />
-                      </span>
-                      <el-dropdown-menu slot="dropdown">
-                        <el-dropdown-item
-                          :command="{
-                            node: node,
-                            data: data,
-                            action: 'insertAfter'
-                          }"
-                        >添加同级分类</el-dropdown-item>
-                        <el-dropdown-item
-                          :command="{
-                            node: node,
-                            data: data,
-                            action: 'append'
-                          }"
-                        >添加子级分类</el-dropdown-item>
-                        <el-dropdown-item
-                          :command="{
-                            node: node,
-                            data: data,
-                            action: 'nodeClick'
-                          }"
-                        >编辑</el-dropdown-item>
-                        <el-dropdown-item
-                          :command="{
-                            node: node,
-                            data: data,
-                            action: 'remove'
-                          }"
-                        >删除</el-dropdown-item>
-                      </el-dropdown-menu>
-                    </el-dropdown>
-                  </span>
+            <div v-if="datas.length===0" style="text-align:center">
+              <el-button type="primary" icon="el-icon-circle-plus-outline" @click="addClick">新增物资分类</el-button>
+            </div>
+            <div v-else>
+              <el-input v-model="filterText" class="xd_search" placeholder="分类名称" />
+              <el-button type="primary" style="margin:0 0 10px 10px" @click="onFind">查找</el-button>
+              <!-- 树 -->
+              <el-tree
+                ref="tree"
+                :data="datas"
+                node-key="id"
+                :filter-node-method="filterNode"
+                :expand-on-click-node="false"
+              >
+                <div slot-scope="{node,data}" class="tree-node" @dblclick="handleNodeClick(data)">
+                  <div class="tree-node">
+                    <span class="node-tit">{{ data.name }}</span>
+                    <span>
+                      <el-dropdown trigger="click" @command="handleCommand">
+                        <span class="el-dropdown-link">
+                          <i class="el-icon-more more" />
+                        </span>
+                        <el-dropdown-menu slot="dropdown">
+                          <el-dropdown-item
+                            :command="{
+                              node: node,
+                              data: data,
+                              action: 'insertAfter'
+                            }"
+                          >添加同级分类</el-dropdown-item>
+                          <el-dropdown-item
+                            :command="{
+                              node: node,
+                              data: data,
+                              action: 'append'
+                            }"
+                          >添加子级分类</el-dropdown-item>
+                          <el-dropdown-item
+                            :command="{
+                              node: node,
+                              data: data,
+                              action: 'nodeClick'
+                            }"
+                          >编辑</el-dropdown-item>
+                          <el-dropdown-item
+                            :command="{
+                              node: node,
+                              data: data,
+                              action: 'remove'
+                            }"
+                          >删除</el-dropdown-item>
+                        </el-dropdown-menu>
+                      </el-dropdown>
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </el-tree>
+              </el-tree>
             <!-- 树end -->
+            </div>
           </div>
         </el-scrollbar>
       </div>
@@ -67,23 +71,23 @@
     <!-- 添加编辑弹窗 -->
     <el-dialog v-el-drag-dialog title="分类信息" :visible.sync="show" width="800px">
       <div class="dialog-main">
-        <el-form ref="form" :model="form" label-width="90px">
+        <el-form ref="form" :model="form" :rules="rules" label-width="90px">
           <el-row type="flex" justify="space-between">
             <el-col :span="11">
-              <el-form-item label="分类名称">
-                <el-input v-model="form.label" />
+              <el-form-item label="分类名称" prop="classifyName">
+                <el-input v-model="form.classifyName" />
               </el-form-item>
             </el-col>
             <el-col :span="11">
               <el-form-item label="拼音码">
-                <el-input v-model="form.pinyinWriting" />
+                <el-input v-model="form.spellCode" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row type="flex" justify="space-between">
             <el-col :span="11">
               <el-form-item label="五笔码">
-                <el-input v-model="form.wubingWriting" />
+                <el-input v-model="form.strokeCode" />
               </el-form-item>
             </el-col>
             <el-col :span="11">
@@ -100,31 +104,31 @@
             </el-col>
             <el-col :span="11">
               <el-form-item label="所属仓库">
-                <el-input v-model="form.warehouse" />
+                <el-input v-model="form.ownWarehouse" />
               </el-form-item>
             </el-col>
           </el-row>
           <el-row type="flex" justify="space-between">
             <el-col :span="11">
               <el-form-item label="有效范围">
-                <el-select v-model="form.effectiveRange" placeholder>
+                <el-select v-model="form.effctiveRange" placeholder="">
                   <el-option
-                    v-for="item in effectiveRange"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
+                    v-for="(val, key) in ssd_effective_range"
+                    :key="val"
+                    :label="val"
+                    :value="key"
                   />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="11">
               <el-form-item label="财务分类">
-                <el-select v-model="form.financial" placeholder>
+                <el-select v-model="form.financialType" placeholder>
                   <el-option
-                    v-for="item in financial"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
+                    v-for="(val, key) in ssd_financial_type"
+                    :key="val"
+                    :label="val"
+                    :value="key"
                   />
                 </el-select>
               </el-form-item>
@@ -133,17 +137,23 @@
           <el-row type="flex" justify="space-between">
             <el-col :span="11">
               <el-form-item label="按批次管理">
-                <el-radio-group v-model="form.batch">
-                  <el-radio label="是" />
-                  <el-radio label="否" />
+                <el-radio-group v-model="form.batchManageFlag">
+                  <el-radio
+                    v-for="(val, key) in ssd_common_boolean"
+                    :key="val"
+                    :label="+key"
+                  >{{ val }}</el-radio>
                 </el-radio-group>
               </el-form-item>
             </el-col>
             <el-col :span="11">
               <el-form-item label="停用">
-                <el-radio-group v-model="form.disable">
-                  <el-radio label="是" />
-                  <el-radio label="否" />
+                <el-radio-group v-model="form.stopFlag">
+                  <el-radio
+                    v-for="(val, key) in ssd_common_boolean"
+                    :key="val"
+                    :label="+key"
+                  >{{ val }}</el-radio>
                 </el-radio-group>
               </el-form-item>
             </el-col>
@@ -151,15 +161,31 @@
           <el-row type="flex" justify="space-between">
             <el-col :span="11">
               <el-form-item label="财务收费">
-                <el-radio-group v-model="form.financialClassification">
-                  <el-radio label="是" />
-                  <el-radio label="否" />
+                <el-radio-group v-model="form.financialChargeFlag">
+                  <el-radio
+                    v-for="(val, key) in ssd_common_boolean"
+                    :key="val"
+                    :label="+key"
+                  >{{ val }}</el-radio>
                 </el-radio-group>
               </el-form-item>
             </el-col>
             <el-col :span="11">
+              <el-form-item label="效期管理">
+                <el-radio-group v-model="form.expireManageFlag">
+                  <el-radio
+                    v-for="(val, key) in ssd_common_boolean"
+                    :key="val"
+                    :label="+key"
+                  >{{ val }}</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row type="flex" justify="space-between">
+            <el-col :span="24">
               <el-form-item label="备注">
-                <el-input v-model="form.Mark" />
+                <el-input v-model="form.remark" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -176,138 +202,119 @@
 
 <script>
 import RightPanel from '@/components/RightPanel'
+import api from '@/api'
 
 export default {
   components: {
     RightPanel
   },
+  inject: ['reload'],
   data() {
     return {
-      show: false,
-      form: {
-        label: '',
-        pinyinWriting: '',
-        wubingWriting: '',
-        customCode: '',
-        countryCode: '',
-        warehouse: '',
-        effectiveRange: '',
-        financial: '',
-        batch: '',
-        disable: '',
-        financialClassification: '',
-        Mark: ''
+      rules: {
+        classifyName: [
+          { required: true, message: '请输入分类名称', trigger: 'blur' }
+        ]
       },
+      show: false,
+      form: {},
+      oldForm: {},
       showSettings: true,
       filterText: '',
-      datas: [
-        {
-          label: '刀类',
-          children: [
-            {
-              label: '叉'
-            },
-            {
-              label: '针'
-            },
-            {
-              label: '刀'
-            }
-          ]
-        },
-        {
-          label: '布类'
-        },
-        {
-          label: '塑料'
-        },
-        {
-          label: '玻璃制品'
-        },
-        {
-          label: '木屑类'
-        }
-      ],
-      financial: [
-        {
-          value: '医技诊疗',
-          label: '医技诊疗'
-        },
-        {
-          value: '临床诊疗',
-          label: '临床诊疗'
-        },
-        {
-          value: '化学试剂',
-          label: '化学试剂'
-        },
-        {
-          value: '配件',
-          label: '配件'
-        },
-        {
-          value: '办公产品',
-          label: '办公产品'
-        },
-        {
-          value: '低值易耗',
-          label: '低值易耗'
-        },
-        {
-          value: '被服材料',
-          label: '被服材料'
-        },
-        {
-          value: '测试',
-          label: '测试'
-        }
-      ],
-      effectiveRange: [
-        {
-          value: '全院',
-          label: '全院'
-        },
-        {
-          value: '本科室',
-          label: '本科室'
-        },
-        {
-          value: '本科室及下级科室',
-          label: '本科室及下级科室'
-        }
-      ],
-      defaultProps: {
-        children: 'children',
-        label: 'label'
-      },
+      datas: [],
       editNode: null,
       editData: null,
-      operation: null
+      operation: null,
+      ssd_common_boolean: null,
+      ssd_effective_range: null,
+      ssd_financial_type: null
     }
   },
+  created() {
+    this.fetchData()
+  },
   methods: {
+    fetchData() {
+      api.toconsuppliestree().then(response => {
+        // console.log(response)
+        this.ssd_common_boolean = response.data.dictData.ssd_common_boolean
+        this.ssd_effective_range = response.data.dictData.ssd_effective_range
+        this.ssd_financial_type = response.data.dictData.ssd_financial_type
+        if (response.data.treeInfo.length === 0) {
+          this.$message({
+            message: '暂无物资分类，请添加',
+            type: 'warning'
+          })
+          return
+        }
+        if (!this.$route.query.id) {
+          this.$router.push({
+            name: 'Goods',
+            query: {
+              id: response.data.treeInfo[0].id,
+              name: response.data.treeInfo[0].name
+            }
+          })
+        }
+        // this.$parent.id = response.data.treeInfo[0].id
+        // this.$parent.title = response.data.treeInfo[0].name + '物资管理'
+        this.datas = response.data.treeInfo
+      })
+    },
+    addClick() {
+      this.form = {
+        parentId: '0'
+      }
+      this.operation = 'addSubmit'
+      this.show = true
+    },
+    addSubmit() {
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toAddsuppliesltype(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.reload()
+              this.$message({
+                message: '添加节点成功',
+                type: 'success'
+              })
+            } else {
+              this.$message({
+                message: '添加失败，请重试',
+                type: 'error'
+              })
+            }
+          })
+          this.show = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
+      })
+    },
     // 树右侧... 下拉点击
     handleCommand({ node, data, action }) {
       this.editNode = node
       this.editData = data
       this.operation = action
-      if (action === 'insertAfter' || action === 'append') {
+      if (action === 'insertAfter') {
         this.form = {
-          label: '',
-          pinyinWriting: '',
-          wubingWriting: '',
-          customCode: '',
-          countryCode: '',
-          warehouse: '',
-          effectiveRange: '',
-          financial: '',
-          batch: '',
-          disable: '',
-          financialClassification: '',
-          Mark: ''
+          parentId: data.parentId
+        }
+      } else if (action === 'append') {
+        this.form = {
+          parentId: data.id
         }
       } else if (action === 'nodeClick') {
-        this.form = JSON.parse(JSON.stringify(data))
+        api.toGetsuppliestype({ id: data.id }).then(response => {
+          // console.log(response)
+          this.oldForm = JSON.parse(JSON.stringify(response.data))
+          this.form = response.data
+          // this.datas = response.data.treeInfo
+        })
       } else {
         this.remove(this.editNode, this.editData)
         return
@@ -317,12 +324,18 @@ export default {
     // 弹窗确认点击
     submitClick() {
       this[this.operation](this.editNode, this.editData)
-      this.show = false
     },
     // 树点击事件
     handleNodeClick(data) {
-      // console.log(data.label)
-      this.$parent.title = data.label + '物资管理'
+      this.$router.push({
+        name: 'Goods',
+        query: {
+          id: data.id,
+          name: data.name
+        }
+      })
+      // this.$parent.id = data.id
+      // this.$parent.title = data.name + '物资管理'
     },
     // 查找按钮
     onFind() {
@@ -330,73 +343,125 @@ export default {
     },
     // 添加同级节点
     insertAfter(node, data) {
-      const nodeList = node.parent.childNodes
-      const curArr = node.parent.data.children || node.parent.data
-      const index = curArr.findIndex(d => d.id === data.id) + 1
-      // console.log(node)
-      new Promise((resolve, reject) => {
-        const newBrother = this.form
-        newBrother.id = ++this.id
-        newBrother.children = []
-        curArr.splice(index, 0, newBrother)
-        resolve()
-      }).then(res => {
-        // console.log(nodeList[index])
-        nodeList[index].checked = true
-      })
-      this.$message({
-        message: '添加同级节点成功',
-        type: 'success'
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toAddsuppliesltype(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              const newBrother = {
+                id: response.data.id,
+                name: response.data.classifyName,
+                parentId: response.data.parentId,
+                children: null
+              }
+              const curArr = node.parent.data.children || node.parent.data
+              curArr.push(newBrother)
+              this.$message({
+                message: '添加节点成功',
+                type: 'success'
+              })
+            }
+          })
+          this.show = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
     },
     // 添加子节点
     append(node, data) {
-      const nodeList = node.childNodes
-      // console.log(nodeList)
-      new Promise((resolve, reject) => {
-        const newChild = this.form
-        newChild.id = ++this.id
-        newChild.children = []
-        // const newChild = { id: ++this.id, label: '', children: [] }
-        if (!data.children) {
-          this.$set(data, 'children', [])
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toAddsuppliesltype(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              const newChild = {
+                id: response.data.id,
+                name: response.data.classifyName,
+                parentId: response.data.parentId,
+                children: null
+              }
+              if (data.children === null) {
+                data.children = []
+              }
+              data.children.push(newChild)
+              this.$message({
+                message: '添加子节点成功',
+                type: 'success'
+              })
+            }
+          })
+          this.show = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
         }
-        data.children.push(newChild)
-        resolve()
-      }).then(res => {
-        nodeList[nodeList.length - 1].checked = true
-      })
-      this.$message({
-        message: '添加子节点成功',
-        type: 'success'
       })
     },
     // 获取当前节点修改checked值
     nodeClick(node, data) {
-      const parent = node.parent
-      const children = parent.data.children || parent.data
-      const index = children.findIndex(d => d.$treeNodeId === node.id)
-      children.splice(index, 1, this.form)
-      this.$message({
-        message: '编辑成功',
-        type: 'success'
+      if (JSON.stringify(this.form) === JSON.stringify(this.oldForm)) {
+        this.$message('无信息修改')
+        this.show = false
+        return
+      }
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toRevisuppliestype(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              // this.tableData.splice(this.editIndex, 1, response.data)
+              const parent = node.parent
+              const children = parent.data.children || parent.data
+              const index = children.findIndex(d => d.$treeNodeId === node.id)
+              const editChild = {
+                id: this.form.id,
+                name: this.form.classifyName,
+                parentId: this.form.parentId,
+                children: children[index].children
+              }
+              children.splice(index, 1, editChild)
+              this.$message({
+                message: '编辑成功',
+                type: 'success'
+              })
+            }
+          })
+          this.show = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
     },
     // 删除节点
     remove(node, data) {
-      const parent = node.parent
-      const children = parent.data.children || parent.data
-      const index = children.findIndex(d => d.$treeNodeId === node.id)
-      children.splice(index, 1)
-      this.$message({
-        message: '删除成功',
-        type: 'success'
+      api.toDeletesuppliestype(data).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          // this.tableData.splice(index, 1)
+          const parent = node.parent
+          const children = parent.data.children || parent.data
+          const index = children.findIndex(d => d.$treeNodeId === node.id)
+          children.splice(index, 1)
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
+        }
       })
     },
     // 树过滤
     filterNode(value, data) {
       if (!value) return true
-      return data.label.indexOf(value) !== -1
+      return data.name.indexOf(value) !== -1
     }
   }
 }
@@ -413,6 +478,11 @@ export default {
 }
 </style>
 <style lang="scss" scoped>
+.tree-node {
+  width: 100%;
+  height: 32px;
+  line-height: 32px;
+}
 .drawer-title {
   height: 40px;
   margin-bottom: 10px;
@@ -457,5 +527,8 @@ export default {
 ::v-deep .el-form-item__label {
   text-align: left;
   font-weight: normal;
+}
+.node-tit {
+  user-select: none
 }
 </style>

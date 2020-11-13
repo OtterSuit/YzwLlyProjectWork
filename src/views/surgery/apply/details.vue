@@ -1,9 +1,9 @@
 <template>
   <div class="apply-contaniner">
     <myfilters title="物品申领单" content="NO.0033124" :back-button="true" style="margin-bottom:20px">
-      <template slot="extent">
+      <!-- <template slot="extent">
         <el-button type="bgc" icon="el-icon-upload">模板管理</el-button>
-      </template>
+      </template> -->
     </myfilters>
     <el-form ref="form" :model="form" label-width="70px">
       <div class="box">
@@ -67,7 +67,6 @@
           <myfilters
             ref="applyFilters"
             title="申领清单"
-            add-icon="el-icon-circle-plus-outline"
             addifo="添加"
             placeholder="器械包名称/编号"
             :search-content="true"
@@ -105,10 +104,10 @@
     </el-form>
     <div>
       <el-button type="primary" style="height:50px;width:140px" @click="onSubmit">提交申请</el-button>
-      <div class="template-button">
+      <!-- <div class="template-button">
         <i class="iconfont icon-baocun" />
         存为模板
-      </div>
+      </div> -->
     </div>
     <el-dialog title="病人信息" :visible.sync="patientShow" width="95%">
       <div class="dialog-main">
@@ -183,6 +182,7 @@
 
 <script>
 import myfilters from '@/components/myfilters'
+import api from '@/api'
 
 export default {
   components: {
@@ -288,7 +288,15 @@ export default {
       ]
     }
   },
+  created() {
+    this.fetchData()
+  },
   methods: {
+    fetchData() {
+      api.peoCarPage().then(response => {
+        console.log(response)
+      })
+    },
     addClick() {
       const name = this.$refs.applyFilters.select.content
       if (name === '') {
@@ -367,6 +375,7 @@ export default {
 .apply-contaniner {
   padding: 30px 20px;
   background-color: #f0f2f5;
+  min-height: calc(100vh - 50px);
 }
 ::v-deep .box {
   background: rgba(255, 255, 255, 1);
@@ -406,9 +415,6 @@ export default {
 }
 ::v-deep .el-scrollbar__wrap {
   overflow-x: hidden;
-}
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
 }
 ::v-deep .hidden-radio .el-radio__label {
   display: none;

@@ -77,7 +77,7 @@
     },
     {
       "icon_id": "61725081",
-      "name": "发货",
+      "name": "发放",
       "font_class": "fahuo",
       "unicode": "e667",
       "unicode_decimal": 58983
@@ -123,6 +123,13 @@
       "font_class": "lingdang",
       "unicode": "e601",
       "unicode_decimal": 58881
+    },
+    {
+      "icon_id": "15685811",
+      "name": "仓库",
+      "font_class": "cangku",
+      "unicode": "e6fd",
+      "unicode_decimal": 59133
     }
   ]
 }

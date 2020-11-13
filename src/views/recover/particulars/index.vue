@@ -1,111 +1,98 @@
 <template>
   <div class="particulars-container" style="padding:30px">
+    <!-- 组件头部 -->
     <myfilters title="申请单详情" :content="content" :back-button="true" />
+    <!-- 组件头部结束 -->
     <div class="box">
       <div class="tab_contain">
-        <el-table :data="[row]" style="width: 100%">
-          <el-table-column label="申请科室" prop="department" />
-          <el-table-column label="任务类别" prop="taskCategory" />
-          <el-table-column label="单号" prop="number" />
-          <el-table-column label="包数量" prop="packageNum" />
+        <!-- 申请单详情 -->
+        <el-table v-loading="listLoading" :data="[firstRow]" style="width: 100%">
+          <el-table-column label="申请科室" prop="applyDeptName" />
+          <el-table-column label="任务类别">
+            <template slot-scope="scope">
+              <span>{{ ssd_workorder_type[scope.row.workorderType] }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="单号" prop="id" />
+          <el-table-column label="包数量" prop="applyCount" />
           <el-table-column label="申请人/时间" width="170">
             <template slot-scope="scope">
-              {{ scope.row.applyPerson }}
+              {{ scope.row.applyUserid }}
               <br>
               <span class="second-row">{{ scope.row.applyTime }}</span>
             </template>
           </el-table-column>
           <el-table-column label="当前状态">
             <template slot-scope="scope">
-              {{ scope.row.person }}【{{ stateTop(scope.row.state) }}】
+              {{ scope.row.lastUser }}【{{ state(scope.row.currentStatus) }}】
               <br>
-              <span class="second-row">{{ scope.row.time }}</span>
+              <span class="second-row">{{ scope.row.currentStatusTime }}</span>
             </template>
           </el-table-column>
         </el-table>
         <img class="pic_user" src="@/assets/images/erwm.png" alt>
+        <!-- 申请单详情结束 -->
       </div>
     </div>
 
-    <!-- 第二个表格 -->
+    <!-- 第二个表格(包信息) -->
 
     <div class="box">
-      <el-table :data="listData" style="width: 100%" :cell-style="cellStyle">
-        <el-table-column label="包图片" align="center">
+      <el-table v-loading="listLoading" :data="listData" style="width: 100%">
+        <el-table-column prop="name" label="包名称" align="center" />
+        <el-table-column prop="packetInstanceId" label="包唯一码" align="center" />
+        <el-table-column label="回收状态" align="center">
           <template slot-scope="scope">
-            <img
-              style="width: 70px;cursor:pointer"
-              :src="scope.row.img"
-              @click="imgClick(scope.$index,scope.row)"
-            >
-          </template>
-        </el-table-column>
-        <el-table-column prop="packageName" label="包名称" />
-        <el-table-column prop="packageCode" label="包唯一码" />
-        <el-table-column label="回收状态">
-          <template slot-scope="scope">
-            <div :class="recyclingStatusColor(scope.row.recyclingStatus)">
-              <i :class="recyclingStatusIcon(scope.row.recyclingStatus)" />
-              {{ recyclingStatus(scope.row.recyclingStatus) }}
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="清洗框/架" class-name="status-col" width="400">
-          <template slot-scope="scope">
-            <div v-if="scope.row.cleaningBox!==''">
-              <el-tag type="success">{{ scope.row.cleaningBox }}</el-tag>
-            </div>
-            <div v-else class="base-color">
-              <i class="el-icon-time" />
-              未分类
+            <div :class="recyclingStatusColor(scope.row.lostOrDamage,scope.row.needCleanBox)">
+              <i :class="recyclingStatusIcon(scope.row.lostOrDamage,scope.row.needCleanBox)" />
+              {{ recyclingStatus(scope.row.lostOrDamage,scope.row.needCleanBox) }}
             </div>
           </template>
         </el-table-column>
         <el-table-column align="right" width="230" class-name="small-padding fixed-width">
           <template slot-scope="scope">
             <el-button
-              v-if="scope.row.recyclingStatus !=='3'&&scope.row.cleaningBox!==''"
-              size="mini"
-              @click="handleEdit(scope.$index,scope.row)"
-            >修改</el-button>
-            <el-button
-              v-if="scope.row.recyclingStatus !=='3'&&scope.row.cleaningBox===''"
+              v-if="(firstRow.currentStatus==='5' || firstRow.currentStatus==='7' || firstRow.currentStatus==='11' || firstRow.currentStatus==='12') && scope.row.needCleanBox=== '1' "
               size="mini"
               type="success"
-              @click="handleClassification(scope.$index,scope.row)"
-            >分类</el-button>
+              @click="handleEdit(scope.$index,scope.row)"
+            >清点</el-button>
             <el-button
-              v-if="scope.row.recyclingStatus ==='3'"
-              type="primary"
+              v-if="scope.row.lostOrDamage==='1'"
               size="mini"
-              @click="handleSign(scope.$index,scope.row)"
-            >
-              <i class="el-icon-check" /> 签收
-            </el-button>
+              @click="showDetail(scope.$index,scope.row)"
+            >查看详情</el-button>
           </template>
         </el-table-column>
       </el-table>
     </div>
+    <el-button
+      v-if="firstRow.currentStatus==='4' || firstRow.currentStatus==='6'"
+      type="primary"
+      :loading="buttonLoading"
+      @click="handleSign()"
+    > 确认签收
+    </el-button>
     <!-- 弹出窗口 -->
-    <el-dialog :visible.sync="show" width="95%">
+    <el-dialog :visible.sync="show" width="95%" class="checkBox">
       <template slot="title">
         <el-row>
           <el-col class="inline-col">
-            <img
+            <!-- <img
               class="dialog-title-img"
               :src="listData[editIndex].img"
               @click="imgClick(editIndex,editRow)"
-            >
+            > -->
           </el-col>
           <el-col class="inline-col">
             <el-row>
-              <div class="dialog-title-top">{{ listData[editIndex].packageName }}</div>
+              <div class="dialog-title-top">{{ editRow.name }}</div>
             </el-row>
             <el-row>
-              <div class="dialog-title-bottom">包唯一码：{{ listData[editIndex].packageCode }}</div>
+              <div class="dialog-title-bottom">包唯一码：{{ editRow.packetInstanceId }}</div>
             </el-row>
             <el-row>
-              <div class="dialog-title-bottom">器械数量：{{ listData[editIndex].recyclingStatus }}</div>
+              <div class="dialog-title-bottom">器械数量：{{ getInstanceCount(InstanceIdDetail[editId]) }}</div>
             </el-row>
           </el-col>
         </el-row>
@@ -116,22 +103,38 @@
             <div class="dialog-main-box">
               <div class="box-title">请清点器械包</div>
               <div style="height:400px">
-                <el-table :data="packageData" style="width: 100%" class="hidden-table">
-                  <el-table-column label="器械名称" width="200" />
+                <el-table :data="InstanceIdDetail[editId]" style="width: 100%" class="hidden-table">
+                  <el-table-column label="器械名称" />
                   <el-table-column label="数量" />
-                  <el-table-column label="状态" width="300" />
+                  <el-table-column label="缺失" width="150" align="center" />
+                  <el-table-column label="损坏" width="150" align="center" />
                 </el-table>
                 <el-scrollbar style="height:350px;background: #fff">
-                  <el-table :data="packageData" style="width: 100%" :show-header="false">
-                    <el-table-column prop="name" width="200" />
-                    <el-table-column prop="num" />
-                    <el-table-column width="300">
+                  <el-table :data="InstanceIdDetail[editId]" style="width: 100%" :show-header="false">
+                    <el-table-column prop="name" />
+                    <el-table-column prop="itemQuantity" />
+                    <el-table-column width="150">
                       <template slot-scope="scope">
-                        <el-radio-group v-model="scope.row.status">
-                          <el-radio label="1">正常</el-radio>
-                          <el-radio label="2">缺失</el-radio>
-                          <el-radio label="3">损坏</el-radio>
-                        </el-radio-group>
+                        <el-input-number
+                          v-model="scope.row.loseCount"
+                          placeholder="缺失"
+                          :min="0"
+                          :max="scope.row.itemQuantity-scope.row.damageCount"
+                          size="small"
+                          controls-position="right"
+                        />
+                      </template>
+                    </el-table-column>
+                    <el-table-column width="150">
+                      <template slot-scope="scope">
+                        <el-input-number
+                          v-model="scope.row.damageCount"
+                          placeholder="损坏"
+                          :min="0"
+                          :max="scope.row.itemQuantity-scope.row.loseCount"
+                          size="small"
+                          controls-position="right"
+                        />
                       </template>
                     </el-table-column>
                   </el-table>
@@ -142,11 +145,10 @@
           <el-col :span="12" class="dialog-right">
             <div class="dialog-main-box">
               <div class="box-title">选择清洗框/架</div>
-              <el-radio-group v-model="cleaningBox">
-                <el-radio label="架01" border />
-                <el-radio label="架02" border />
-                <el-radio label="架03" border />
-                <el-radio label="架04" border />
+              <el-radio-group v-model="cleanboxId">
+                <el-radio v-for="(box,index) in CLEAN_RACK" :key="index" :label="index" border>
+                  <span>{{ box }}</span>
+                </el-radio>
               </el-radio-group>
             </div>
           </el-col>
@@ -157,142 +159,57 @@
         <el-button type="primary" @click="signSubmit">确定</el-button>
       </div>
     </el-dialog>
-
-    <el-image-viewer v-show="imgShow" :on-close="viewerClose" :url-list="[srcList]" />
+    <el-dialog title="物品详细" :visible.sync="detailShow" width="800px">
+      <div class="dialog-main">
+        <div class="dialog-main-box">
+          <div style="height:450px">
+            <el-table v-loading="dialogLoading" :data="detailData" style="width: 100%" class="hidden-table">
+              <el-table-column label="序号" type="index" width="130" align="center" />
+              <el-table-column label="名称" />
+              <el-table-column label="缺失" />
+              <el-table-column label="损坏" />
+            </el-table>
+            <el-scrollbar style="height:400px;background: #fff">
+              <el-table :data="detailData" style="width: 100%" :show-header="false">
+                <el-table-column type="index" width="130" align="center" />
+                <el-table-column prop="name" />
+                <el-table-column prop="loseCount" />
+                <el-table-column prop="damageCount" />
+              </el-table>
+            </el-scrollbar>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import myfilters from '@/components/myfilters'
-
+import api from '@/api'
 export default {
   components: {
     myfilters
   },
   data() {
     return {
-      row: {
-        department: '儿二科',
-        taskCategory: '退货申请单',
-        number: '251412',
-        packageNum: '3',
-        applyPerson: '张春兰',
-        applyTime: '2020.08.10 09:42:52',
-        state: '2',
-        person: '张海东',
-        time: '2020.08.10 09:45:16'
-      },
-      srcList: null,
-      imgShow: false,
-      show: false,
-      listData: [
-        {
-          img: 'https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=3670282122,1749891040&fm=26&gp=0.jpg',
-          packageName: '膀胱镜包',
-          packageCode: '00238322',
-          recyclingStatus: '1',
-          cleaningBox: '架01',
-          packageData: [
-            {
-              name: '卵圆钳(弯/直/有齿/无齿)',
-              num: 1,
-              status: '1'
-            },
-            {
-              name: '大弯钳(18CM)',
-              num: 1,
-              status: '1'
-            },
-            {
-              name: '大弯钳(18CM)',
-              num: 1,
-              status: '1'
-            },
-            {
-              name: '组织剪(弯)',
-              num: 1,
-              status: '1'
-            },
-            {
-              name: '中碗',
-              num: 1,
-              status: '1'
-            },
-            {
-              name: '治疗碗',
-              num: 1,
-              status: '1'
-            },
-            {
-              name: '小杯',
-              num: 1,
-              status: '1'
-            }
-          ]
-        },
-        {
-          img: 'https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=3670282122,1749891040&fm=26&gp=0.jpg',
-          packageName: '膀胱镜包',
-          packageCode: '00238322',
-          recyclingStatus: '1',
-          cleaningBox: ''
-        },
-        {
-          img: 'https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=3670282122,1749891040&fm=26&gp=0.jpg',
-          packageName: '膀胱镜包',
-          packageCode: '00238322',
-          recyclingStatus: '2',
-          cleaningBox: '架04',
-          packageData: [
-            {
-              name: '卵圆钳(弯/直/有齿/无齿)',
-              num: 1,
-              status: '1'
-            },
-            {
-              name: '大弯钳(18CM)',
-              num: 1,
-              status: '2'
-            },
-            {
-              name: '大弯钳(18CM)',
-              num: 1,
-              status: '3'
-            },
-            {
-              name: '组织剪(弯)',
-              num: 1,
-              status: '1'
-            },
-            {
-              name: '中碗',
-              num: 1,
-              status: '1'
-            },
-            {
-              name: '治疗碗',
-              num: 1,
-              status: '1'
-            },
-            {
-              name: '小杯',
-              num: 1,
-              status: '1'
-            }
-          ]
-        },
-        {
-          img: 'https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=3670282122,1749891040&fm=26&gp=0.jpg',
-          packageName: '膀胱镜包',
-          packageCode: '00238322',
-          recyclingStatus: '3',
-          cleaningBox: ''
-        }
-      ],
-      cleaningBox: '',
-      packageData: [],
-      editIndex: 0,
-      editRow: null
+      listLoading: true,
+      buttonLoading: false,
+      dialogLoading: true,
+      firstRow: {}, // 单详情
+      ssd_workorder_status: '', // 工单状态
+      ssd_workorder_type: '', // 工单类型
+      detailShow: false, // 损坏弹窗
+      show: false, // 清点弹窗
+      listData: [], // 清点列表
+      detailData: [], // 损坏列表
+      editIndex: 0, // 编辑index
+      editRow: '', // 编辑行
+      editId: '', // 编辑id
+      cleanboxId: '', // 清洗架id
+      InstanceIdDetail: { }, // 器械详情
+      CLEAN_POT: [],
+      CLEAN_RACK: []
     }
   },
   computed: {
@@ -300,139 +217,237 @@ export default {
       return '共' + this.listData.length + '条数据'
     }
   },
+  created() {
+    this.id = this.$route.query.id
+    this.fetchData()
+    api.toconstanttypeBatch({
+      constantCodes: [
+        'CLEAN_RACK',
+        'CLEAN_POT'
+      ]
+    }).then(response => {
+      this.CLEAN_RACK = response.data.constantsDetail.CLEAN_RACK
+      this.CLEAN_POT = response.data.constantsDetail.CLEAN_POT
+    })
+  },
   methods: {
-    imgClick(index, row) {
-      this.imgShow = true
-      this.srcList = row.img
-    },
-    viewerClose() {
-      this.imgShow = false
-    },
-    cellStyle({ columnIndex }) {
-      if (columnIndex === 1) {
-        return {
-          color: '#409EFF'
+    fetchData() {
+      // 查看包实例明细
+      // 获取工单详情
+      api.toGetWorkorder({ id: this.id }).then(response => {
+        this.listLoading = true
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.firstRow = response.data.workorderPage
+          this.ssd_workorder_status = response.data.dictData.ssd_workorder_status // 工单状态
+          this.ssd_workorder_type = response.data.dictData.ssd_workorder_type // 工单类型
+          this.listData = response.data.packetInstancePage.records
+          this.listLoading = false
         }
-      }
+      })
     },
-    stateTop(state) {
-      const stateMap = {
-        '1': '已签收',
-        '2': '正在送货'
+    state(state) {
+      if (state === '5' || state === '7') {
+        return this.ssd_workorder_status['11']
       }
-      return stateMap[state]
+      return this.ssd_workorder_status[state]
     },
-    recyclingStatus(state) {
+    // 回收状态
+    recyclingStatus(ldstate, boxstate) {
       const stateMap = {
-        '1': '已签收',
-        '2': '缺/损',
+        '0': '正常',
+        '1': '缺/损',
+        '2': '未清点',
         '3': '未签收'
       }
-      return stateMap[state]
+      if (this.firstRow.currentStatus === '4' || this.firstRow.currentStatus === '6') {
+        return stateMap['3']
+      }
+      if (boxstate === '1') {
+        return stateMap['2']
+      }
+      return stateMap[ldstate]
     },
-    recyclingStatusIcon(state) {
+    // 状态图标
+    recyclingStatusIcon(ldstate, boxstate) {
       const stateMap = {
-        '1': 'el-icon-success',
-        '2': 'el-icon-warning',
+        '0': 'el-icon-success',
+        '1': 'el-icon-warning',
+        '2': 'el-icon-time',
         '3': 'el-icon-time'
       }
-      return stateMap[state]
+      if (boxstate === '1') {
+        return stateMap['2']
+      }
+      return stateMap[ldstate]
     },
-    recyclingStatusColor(state) {
+    // 状态颜色
+    recyclingStatusColor(ldstate, boxstate) {
       const stateMap = {
-        '1': 'success-color',
-        '2': 'error-color',
+        '0': 'success-color',
+        '1': 'error-color',
+        '2': 'base-color',
         '3': 'base-color'
       }
-      return stateMap[state]
-    },
-    handleSign(index, row) {
-      row.recyclingStatus = '1'
-      this.$message({
-        message: '签收成功',
-        type: 'success'
-      })
-    },
-    signSubmit() {
-      if (this.cleaningBox.length === 0) {
-        this.$message({
-          message: '请至少选择一个清洗框/架',
-          type: 'warning'
-        })
-        return
+      if (boxstate === '1') {
+        return stateMap['2']
       }
-      this.$set(this.editRow, 'cleaningBox', this.cleaningBox)
-      this.$set(this.editRow, 'packageData', this.packageData)
-      let status = '1'
-      this.packageData.forEach(element => {
-        if (element.status !== '1') {
-          status = '2'
-          return
+      return stateMap[ldstate]
+    },
+    // 签收
+    handleSign() {
+      this.buttonLoading = true
+      // 回收签收
+      if (this.firstRow.currentStatus === '4') {
+        api.toConfirmRecycle({ orderId: this.$route.query.id, remark: '' }).then(response => {
+          // console.log(response)
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.$message({
+              message: '签收成功',
+              type: 'success'
+            })
+            this.$set(this.firstRow, 'currentStatus', '11')
+            this.buttonLoading = false
+          }
+        })
+      } else {
+        // 退回签收
+        api.toConfirmReturn({ orderId: this.$route.query.id }).then(response => {
+          // console.log(response)
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.$message({
+              message: '签收成功',
+              type: 'success'
+            })
+            this.$set(this.firstRow, 'currentStatus', '11')
+            this.buttonLoading = false
+          }
+        })
+      }
+    },
+    // 损坏详情
+    showDetail(index, row) {
+      this.dialogLoading = true
+      api.toShowPiPage({ loseAndDamage: '1', packetInstanceId: row.packetInstanceId }).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.detailData = response.data.records[0].lostDamageList
+          this.detailShow = true
+          this.dialogLoading = false
         }
       })
-      this.$set(this.editRow, 'recyclingStatus', status)
-      this.$message({
-        message: '分类成功',
-        type: 'success'
+    },
+    // 清点提交
+    signSubmit() {
+      let lostOrDamage = '0' // 损坏标识
+      // 提交表单
+      const recycleBean = {
+        itemMissRecord: [],
+        cleanboxId: this.cleanboxId,
+        packetInstanceId: this.editRow.packetInstanceId,
+        workorderId: this.firstRow.id
+      }
+      // console.log(this.editRow.id)
+      // 循环遍历,搜寻有填写内容的物资
+      this.editRow.packet.forEach(item => {
+        if (item.damageCount === 0 && item.loseCount === 0) {
+          return
+        } else {
+          lostOrDamage = '1'
+        }
+        // 填入表单
+        recycleBean.itemMissRecord.push({
+          'itemId': item.id,
+          'loseCount': item.loseCount,
+          'damageCount': item.damageCount
+        })
+      })
+      // console.log(recycleBean)
+
+      // 发送请求
+      api.toReviseInstance(recycleBean).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.buttonLoading = true
+          this.editRow.needCleanBox = '0'
+          this.editRow.lostOrDamage = lostOrDamage
+          this.buttonLoading = false
+          if (this.isCompleted(this.listData)) {
+            this.$set(this.firstRow, 'currentStatus', '13')
+            this.$message({
+              message: '清点完成',
+              type: 'success'
+            })
+          } else {
+            this.$set(this.firstRow, 'currentStatus', '12')
+            this.$message({
+              message: '清点成功',
+              type: 'success'
+            })
+          }
+          // this.$set(this.firstRow, 'currentStatus', this.isCompleted(this.listData) ? '13' : '12')
+          // this.$message({
+          //   message: '清点成功',
+          //   type: 'success'
+          // })
+        }
       })
       this.show = false
     },
-    // 分类按钮
-    handleClassification(index, row) {
-      this.show = true
-      this.editIndex = index
-      this.editRow = row
-      this.packageData = [
-        {
-          name: '卵圆钳(弯/直/有齿/无齿)',
-          num: 1,
-          status: '1'
-        },
-        {
-          name: '大弯钳(18CM)',
-          num: 1,
-          status: '1'
-        },
-        {
-          name: '大弯钳(18CM)',
-          num: 1,
-          status: '1'
-        },
-        {
-          name: '组织剪(弯)',
-          num: 1,
-          status: '1'
-        },
-        {
-          name: '中碗',
-          num: 1,
-          status: '1'
-        },
-        {
-          name: '治疗碗',
-          num: 1,
-          status: '1'
-        },
-        {
-          name: '小杯',
-          num: 1,
-          status: '1'
+    // 清点是否全部完成
+    isCompleted(listData) {
+      console.log(listData)
+      let flag = true
+      listData.forEach(item => {
+        if (item.needCleanBox === '1') {
+          flag = false
         }
-      ]
-      this.cleaningBox = ''
+      })
+      return flag
     },
+    // 获取器械数量
+    getInstanceCount(detail) {
+      if (detail) {
+        let count = 0
+        detail.forEach(item => {
+          count += item.itemQuantity
+        })
+        return count
+      }
+    },
+    // 获取物资
     handleEdit(index, row) {
-      this.show = true
-      this.editIndex = index
-      this.editRow = row
-      this.packageData = row.packageData
-      this.cleaningBox = row.cleaningBox
+      this.editRow = row // 当前修改行
+      const id = row.packetInstanceId // 获取实例包id
+      this.editId = id
+      // 判断该定义包的物资是否已保存
+      if (this.InstanceIdDetail[id] === undefined) {
+        api.toInstanceDetail({ packetInstanceId: row.packetInstanceId, workorderId: this.$route.query.id }).then(response => {
+          console.log(response)
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.InstanceIdDetail[id] = response.data.page.records // 保存起来
+            row.packet = this.InstanceIdDetail[id] // 复制数据
+            this.show = true
+            if (response.data.packetInstanceCleanbox === null) {
+              this.cleanboxId = Object.keys(this.CLEAN_RACK)[0]
+            } else {
+              this.cleanboxId = response.data.packetInstanceCleanbox.cleanboxId
+            }
+          }
+        })
+      } else {
+        if (row.packet === undefined) {
+          row.packet = this.InstanceIdDetail[id] // 复制数据
+        }
+        this.show = true
+      }
     }
   }
 }
 </script>
 <style lang="scss" type="text/scss" scoped>
 .particulars-container {
+  min-height: calc(100vh - 50px);
   padding: 30px;
   background-color: #f0f2f5;
 }
@@ -447,17 +462,23 @@ export default {
     margin-left: 20px;
   }
 }
-.dialog-title-top {
-  font-size: 18px;
-  line-height: 24px;
-  margin-bottom: 15px;
+ ::v-deep .checkBox{
+  .el-dialog__header {
+    height: 100px;
+    padding: 20px;
+    padding-left: 40px;
+  }
+  .dialog-title-top {
+    font-size: 18px;
+    line-height: 24px;
+  }
+  .dialog-title-bottom {
+    color: #999;
+    font-size: 14px;
+    line-height: 19px;
+  }
 }
-.dialog-title-bottom {
-  color: #999;
-  font-size: 14px;
-  line-height: 19px;
-  margin-bottom: 8px;
-}
+
 .dialog-main-box {
   height: 480px;
   background: rgba(246, 246, 246, 1);
@@ -491,19 +512,27 @@ export default {
   position: relative;
 }
 ::v-deep .el-dialog__header {
-  height: 130px;
+  // height: 90px;
   padding: 20px;
 }
+::v-deep .el-dialog__body {
+  /* height: 130px; */
+  padding: 20px;
+}
+
 ::v-deep .el-image-viewer__wrapper {
   z-index: 2002 !important;
 }
 ::v-deep .el-scrollbar__wrap {
   overflow-x: hidden;
 }
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
-}
 ::v-deep .dialog-right {
+  .el-radio {
+    margin: 20px
+  }
+  .el-radio.is-bordered+.el-radio.is-bordered{
+    margin-left: 20px
+  }
   .el-radio__input {
     position: absolute;
     top: -3px;

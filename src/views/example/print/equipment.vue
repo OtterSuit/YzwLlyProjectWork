@@ -25,7 +25,7 @@
               <div class="equipment-code">10000</div>
             </el-col>
             <el-col :span="12" class="img-col">
-              <img :src="erwmURL" class="erwm-img">
+              <MyQrcode text="标签模版样式1" class="erwm-img" :size="180" />
             </el-col>
           </div>
         </div>
@@ -37,7 +37,7 @@
         <div class="label-main">
           <div class="label-top">
             <el-col :span="12" class="img-col">
-              <img :src="erwmURL" class="erwm-img">
+              <MyQrcode text="标签模版样式2" class="erwm-img" :size="180" />
             </el-col>
             <el-col :span="12" class="content-col content-col-2">
               <div class="equipment-code">10000</div>
@@ -54,24 +54,24 @@
             <div class="dialog-main-box">
               <div class="box-title">请选择设备</div>
               <div style="height:470px">
-                <el-table :data="tableData" style="width: 100%" class="hidden-table">
+                <el-table v-loading="listLoading" :data="tableData" style="width: 100%" class="hidden-table">
                   <el-table-column label="选择" align="center" width="100" />
-                  <el-table-column label="设备类别" width="200" />
-                  <el-table-column label="数量" />
+                  <el-table-column label="编码" />
+                  <el-table-column label="名称" />
                 </el-table>
-                <el-scrollbar style="height:420px;background: #fff">
-                  <el-table :data="tableData" style="width: 100%" :show-header="false">
+                <el-scrollbar class="scrollbar">
+                  <el-table v-loading="listLoading" :data="tableData" style="width: 100%" :show-header="false">
                     <el-table-column align="center" width="100">
                       <template slot-scope="scope">
-                        <el-radio
-                          v-model="name"
-                          :label="scope.row.code"
+                        <el-checkbox
+                          v-model="form.code"
+                          :label="scope.row"
                           class="hidden-radio"
                         />
                       </template>
                     </el-table-column>
-                    <el-table-column prop="name" width="200" />
-                    <el-table-column prop="number" />
+                    <el-table-column prop="code" />
+                    <el-table-column prop="name" />
                   </el-table>
                 </el-scrollbar>
               </div>
@@ -83,15 +83,10 @@
               <el-form ref="form" :model="form" label-width="80px">
                 <el-row type="flex" justify="space-between">
                   <el-col :span="11">
-                    <el-form-item label="打印数量">
-                      <el-input v-model="form.num" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="11">
                     <el-form-item label="标签样式">
                       <el-select v-model="form.style" placeholder="请选择标签样式">
-                        <el-option label="模板样式1" value="模板样式1" />
-                        <el-option label="模板样式2" value="模板样式2" />
+                        <el-option label="模板样式1" :value="1" />
+                        <el-option label="模板样式2" :value="2" />
                       </el-select>
                     </el-form-item>
                   </el-col>
@@ -102,25 +97,25 @@
                   <div class="label-title">标签预览</div>
                 </el-col>
                 <el-col :span="20">
-                  <div v-show="form.style==='模板样式1'" class="label-main">
+                  <div v-show="form.style===1" class="label-main">
                     <div class="label-top">
                       <el-col :span="12" class="content-col">
-                        <div class="equipment-name">{{ form.name }}</div>
-                        <div class="equipment-code">{{ form.code }}</div>
+                        <div class="equipment-name">设备名称</div>
+                        <div class="equipment-code">10000</div>
                       </el-col>
                       <el-col :span="12" class="img-col">
-                        <img :src="erwmURL" class="erwm-img">
+                        <MyQrcode text="标签模版样式1" class="erwm-img" :size="180" />
                       </el-col>
                     </div>
                   </div>
-                  <div v-show="form.style==='模板样式2'" class="label-main">
+                  <div v-show="form.style===2" class="label-main">
                     <div class="label-top">
                       <el-col :span="12" class="img-col">
-                        <img :src="erwmURL" class="erwm-img">
+                        <MyQrcode text="标签模版样式2" class="erwm-img" :size="180" />
                       </el-col>
                       <el-col :span="12" class="content-col content-col-2">
-                        <div class="equipment-code">{{ form.code }}</div>
-                        <div class="equipment-name">{{ form.name }}</div>
+                        <div class="equipment-code">10000</div>
+                        <div class="equipment-name">设备名称</div>
                       </el-col>
                     </div>
                   </div>
@@ -140,81 +135,95 @@
 
 <script>
 import myfilters from '@/components/myfilters'
+import MyQrcode from '@/components/MyQrcode'
+import api from '@/api'
 
 export default {
   components: {
-    myfilters
+    myfilters,
+    MyQrcode
+  },
+  props: {
+    activeIndex: {
+      type: String,
+      default: ''
+    }
   },
   data() {
     return {
-      erwmURL: require('../../../assets/images/erwm.png'),
       printShow: false,
-      tableData: [
-        {
-          code: '10001',
-          name: '清洗架',
-          number: 12
-        },
-        {
-          code: '10002',
-          name: '清洗锅',
-          number: 16
-        },
-        {
-          code: '10003',
-          name: '灭菌架',
-          number: 6
-        },
-        {
-          code: '10004',
-          name: '灭菌锅',
-          number: 10
-        },
-        {
-          code: '10005',
-          name: '清洗程序',
-          number: 1
-        },
-        {
-          code: '10006',
-          name: '灭菌程序',
-          number: 1
-        }
-      ],
-      name: '1001',
-      form: {}
+      tableData: [],
+      form: {},
+      totalCount: 0,
+      listLoading: true
     }
   },
   watch: {
-    name: {
+    activeIndex: {
       handler(newValue, oldValue) {
-        this.tableData.forEach(element => {
-          if (element.code === this.name) {
-            this.form.num = element.number
-            this.form.name = element.name
-            this.form.code = element.code
-          }
+        this.listLoading = true
+        api.toconstantPage({ constantType: this.activeIndex }).then(response => {
+        // console.log(response)
+          this.totalCount = response.data.totalCount
+          this.tableData = response.data.records
+          this.listLoading = false
         })
       }
     }
   },
+  created() {
+    // this.conditions.constantType = this.$route.query.id
+    this.fetchData()
+  },
   methods: {
+    fetchData() {
+      this.listLoading = true
+      api.toconstantPage({ constantType: this.activeIndex }).then(response => {
+        // console.log(response)
+        this.totalCount = response.data.totalCount
+        this.tableData = response.data.records
+        this.listLoading = false
+      })
+    },
+    // 标签打印点击
     print() {
       this.printShow = true
-      this.name = this.tableData[0].code
       this.form = {
-        style: '模板样式1',
-        num: this.tableData[0].number,
-        name: this.tableData[0].name,
-        code: this.tableData[0].code
+        style: 1,
+        code: []
       }
     },
+    // 确定打印点击
     printSubmit() {
-      this.printShow = false
-      this.$message({
-        message: '打印成功',
-        type: 'success'
+      if (this.form.code.length === 0) {
+        this.$message({
+          message: '请选择设备',
+          type: 'warning'
+        })
+        return
+      }
+      const form = {
+        style: this.form.style,
+        code: []
+      }
+      this.form.code.forEach(element => {
+        form.code.push({
+          name: element.name,
+          code: element.code,
+          id: element.id
+        })
       })
+      // console.log(form)
+
+      const routeUrl = this.$router.resolve({
+        path: '/print/equipmentPrint',
+        query: {
+          title: '设备标签打印',
+          data: JSON.stringify(form)
+        }
+      })
+      window.open(routeUrl.href, '_blank')
+      this.printShow = false
     }
   }
 }
@@ -246,16 +255,18 @@ export default {
 }
 .label-main {
   width: 394px;
-  height: 236px;
-  border: 1px dotted #ababab;
+  height: 240px;
+  border: 1px solid #ababab;
   .label-top {
     background-color: #fff;
     padding: 20px;
-    height: 234px;
+    height: 238px;
   }
   .erwm-img {
-    width: 196px;
-    border: 1px solid #9b9b9b;
+    padding: 10px;
+    float: left;
+    height: 200px;
+    border: 1px solid rgba(155, 155, 155, 1);
   }
   .equipment-name {
     font-size: 24px;
@@ -263,7 +274,7 @@ export default {
     margin-bottom: 20px;
   }
   .equipment-code {
-    font-size: 46px;
+    font-size: 30px;
     line-height: 61px;
     margin-bottom: 30px;
   }
@@ -279,15 +290,16 @@ export default {
     line-height: 24px;
     margin-bottom: 16px;
   }
+  .scrollbar{
+    height:420px;
+    background: #fff
+  }
 }
-::v-deep .hidden-radio .el-radio__label {
+::v-deep .hidden-radio .el-checkbox__label {
   display: none;
 }
 ::v-deep .el-scrollbar__wrap {
   overflow-x: hidden;
-}
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
 }
 ::v-deep .el-form-item__label {
   text-align: left;

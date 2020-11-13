@@ -7,18 +7,16 @@
       placeholder="申请人/订单编号"
       :choose-date="true"
       :add-button="true"
+      :choose-type="true"
       :choose-status="true"
-      :choose-states="true"
-      add-icon="el-icon-circle-plus-outline"
       addifo="借物申请"
+      :type-options="typeOptions"
       :status-options="statusOptions"
-      :states-options="statesOptions"
-      format="yyyy.MM.dd"
       :search-content="true"
       @contentChange="contentChange"
       @dateChange="dateChange"
+      @typeChange="typeChange"
       @statusChange="statusChange"
-      @statesChange="statesChange"
       @addClick="applyClick"
     />
     <!-- 头部 end -->
@@ -82,7 +80,7 @@
                   row: scope.row,
                   action: 'handleGoods'
                 }"
-              >确认收货</el-dropdown-item>
+              >确认回收</el-dropdown-item>
               <el-dropdown-item
                 v-if="scope.row.applyType==='借入'"
                 :disabled="scope.row.state!=='1'"
@@ -110,29 +108,29 @@ export default {
   },
   data() {
     return {
-      statesOptions: [
+      statusOptions: [
         {
           value: '全部状态',
           label: '全部状态'
         },
         {
-          value: '已收货',
-          label: '已收货'
+          value: '已回收',
+          label: '已回收'
         },
         {
           value: '未审核',
           label: '未审核'
         },
         {
-          value: '已审核，待发货',
-          label: '已审核，待发货'
+          value: '已审核，待发放',
+          label: '已审核，待发放'
         },
         {
           value: '已驳回',
           label: '已驳回'
         }
       ],
-      statusOptions: [
+      typeOptions: [
         {
           value: '全部类别',
           label: '全部类别'
@@ -249,19 +247,19 @@ export default {
     dateChange(date) {
       console.log(date)
     },
-    statusChange(status) {
+    typeChange(status) {
       console.log(status)
     },
-    statesChange(states) {
+    statusChange(states) {
       console.log(states)
     },
     // 状态标签文字
     state(state) {
       const stateMap = {
-        '1': '已收货',
+        '1': '已回收',
         '2': '未审核',
-        '3': '已审核，待发货',
-        '4': '已发货，待收货',
+        '3': '已审核，待发放',
+        '4': '已发放，待回收',
         '5': '已驳回'
       }
       return stateMap[state]

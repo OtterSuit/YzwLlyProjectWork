@@ -10,15 +10,15 @@
         <el-col>
           <div class="login-title">请登陆</div>
 
-          <el-form-item prop="username">
+          <el-form-item>
             <span class="svg-container">
               <i class="el-icon-user" />
             </span>
             <el-input
-              ref="username"
-              v-model="loginForm.username"
+              ref="userName"
+              v-model="loginForm.userName"
               placeholder="请输入用户名"
-              name="username"
+              name="userName"
               type="text"
               tabindex="1"
               auto-complete="on"
@@ -37,20 +37,19 @@
               placeholder="请输入密码"
               name="password"
               tabindex="2"
-              auto-complete="on"
               @keyup.enter.native="handleLogin"
             />
-            <span class="show-pwd" @click="showPwd">
+            <span class="show-pwd" @mousedown="showPwd" @mouseup="hiddenPwd">
               <svg-icon :icon-class="passwordType === 'password' ? 'eye' : 'eye-open'" />
             </span>
           </el-form-item>
 
           <el-button :loading="loading" type="primary" style="width:150px;height:48px;margin-bottom:30px;" @click.native.prevent="handleLogin">登陆</el-button>
-          <span class="forget">忘记密码？</span>
+          <!-- <span class="forget">忘记密码？</span> -->
         </el-col>
       </el-row>
       <!-- <div class="tips">
-        <span style="margin-right:20px;">username: admin</span>
+        <span style="margin-right:20px;">userName: admin</span>
         <span> password: any</span>
       </div> -->
 
@@ -59,71 +58,56 @@
 </template>
 
 <script>
-import { validUsername } from '@/utils/validate'
+// import api from '@/api'
+// import { validUsername } from '@/utils/validate'
+// import Cookies from 'js-cookie'
 
 export default {
   name: 'Login',
   data() {
-    const validateUsername = (rule, value, callback) => {
-      if (!validUsername(value)) {
-        callback(new Error('Please enter the correct user name'))
-      } else {
-        callback()
-      }
-    }
     const validatePassword = (rule, value, callback) => {
       if (value.length < 6) {
-        callback(new Error('The password can not be less than 6 digits'))
+        callback(new Error('密码不能少于6位'))
       } else {
         callback()
       }
     }
     return {
       loginForm: {
-        username: 'admin',
-        password: '111111'
+        userName: '',
+        password: '',
+        systemCode: 'ssd'
       },
       loginRules: {
-        username: [{ required: true, trigger: 'blur', validator: validateUsername }],
         password: [{ required: true, trigger: 'blur', validator: validatePassword }]
       },
       loading: false,
-      passwordType: 'password',
-      redirect: undefined
-    }
-  },
-  watch: {
-    $route: {
-      handler: function(route) {
-        this.redirect = route.query && route.query.redirect
-      },
-      immediate: true
+      passwordType: 'password'
     }
   },
   methods: {
     showPwd() {
-      if (this.passwordType === 'password') {
-        this.passwordType = ''
-      } else {
-        this.passwordType = 'password'
-      }
+      this.passwordType = ''
+      window.addEventListener('mouseup', this.hiddenPwd)
+    },
+    hiddenPwd() {
+      this.passwordType = 'password'
+      window.removeEventListener('mouseup', this.hiddenPwd)
       this.$nextTick(() => {
         this.$refs.password.focus()
       })
     },
-    handleLogin() {
-      this.$refs.loginForm.validate(valid => {
+    async handleLogin() {
+      // 验证登录
+      this.$refs.loginForm.validate(async valid => {
         if (valid) {
           this.loading = true
           this.$store.dispatch('user/login', this.loginForm).then(() => {
-            this.$router.push({ path: this.redirect || '/' })
+            this.$router.push({ path: '/' })
             this.loading = false
           }).catch(() => {
             this.loading = false
           })
-        } else {
-          console.log('error submit!!')
-          return false
         }
       })
     }
@@ -133,9 +117,8 @@ export default {
 
 <style lang="scss">
 /* 修复input 背景不协调 和光标变色 */
-/* Detail see https://github.com/PanJiaChen/vue-element-admin/pull/927 */
 
-$bg:#123d77;
+$bg:#fff;
 $light_gray:#fff;
 $cursor: #fff;
 
@@ -166,7 +149,10 @@ $cursor: #fff;
 
       &:-webkit-autofill {
         box-shadow: 0 0 0px 1000px $bg inset !important;
-        -webkit-text-fill-color: $cursor !important;
+        -webkit-text-fill-color: black !important;
+        height: 30px;
+        margin-left: 10px;
+        padding-left: 2px;
       }
     }
   }

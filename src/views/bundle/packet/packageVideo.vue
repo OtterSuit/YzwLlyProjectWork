@@ -24,10 +24,20 @@
 
 <script>
 import { videoPlayer } from 'vue-video-player'
+import APIconfig from '@/api/APIconfig'
+
 export default {
   name: 'VideoPlayer',
   components: {
     videoPlayer
+  },
+  props: {
+    src: {
+      type: Object,
+      default() {
+        return {}
+      }
+    }
   },
   data() {
     return {
@@ -42,7 +52,7 @@ export default {
         fluid: true, // 当true时，Video.js player将拥有流体大小。换句话说，它将按比例缩放以适应其容器。
         sources: [{
           type: 'video/mp4',
-          src: 'http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4' // 你的视频地址（必填）
+          src: '' // 你的视频地址（必填）
           // https://cdn.theguardian.tv/webM/2015/07/20/150716YesMen_synd_768k_vp8.webm
         }],
         // poster: 'poster.jpg', // 你的封面地址
@@ -57,7 +67,14 @@ export default {
       }
     }
   },
+  created() {
+    this.$set(this.playerOptions.sources[0], 'src', this.videoSrc(this.src.videosCourse[0].url))
+  },
   methods: {
+    // 获取视频链接
+    videoSrc(videoInfo) {
+      return `${APIconfig.baseUrl}/${videoInfo}`
+    },
     // 播放事件
     onPlayerPlay() { },
     // 暂停事件

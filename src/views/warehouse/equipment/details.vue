@@ -18,73 +18,73 @@
             <el-row class="row">
               <el-col :span="6">
                 <span class="label">物品名称</span>
-                <span class="content">{{ form.base.itemName }}</span>
+                <span class="content">{{ form.name }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">拼音编码</span>
-                <span class="content">{{ form.base.pinyinWriting }}</span>
+                <span class="content">{{ form.spellCode }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">五笔编码</span>
-                <span class="content">{{ form.base.wubingWriting }}</span>
+                <span class="content">{{ form.wubingWriting }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">自定义码</span>
-                <span class="content">{{ form.base.customCode }}</span>
+                <span class="content">{{ form.customCode }}</span>
               </el-col>
             </el-row>
             <el-row class="row">
               <el-col :span="6">
                 <span class="label">物品别名</span>
-                <span class="content">{{ form.base.alias }}</span>
+                <span class="content">{{ form.alias }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">拼音编码</span>
-                <span class="content">{{ form.base.aliaspinyinCode }}</span>
+                <span class="content">{{ form.aliasSpellCode }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">五笔编码</span>
-                <span class="content">{{ form.base.aliasWubiCode }}</span>
+                <span class="content">{{ form.aliasStrokeCode }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">自定义码</span>
-                <span class="content">{{ form.base.aliasCustomCode }}</span>
+                <span class="content">{{ form.aliasCustomCode }}</span>
               </el-col>
             </el-row>
             <el-row class="row">
               <el-col :span="6">
                 <span class="label">物品规格</span>
-                <span class="content">{{ form.base.standard }}</span>
+                <span class="content">{{ form.spec }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">包装单位</span>
-                <span class="content">{{ form.base.unit }}</span>
+                <span class="content">{{ form.largePackUnit }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">零售单价</span>
-                <span class="content">{{ form.base.retailPrice }}</span>
+                <span class="content">{{ form.retailUnitPrice }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">国标码</span>
-                <span class="content">{{ form.base.countryCode }}</span>
+                <span class="content">{{ form.countryCode }}</span>
               </el-col>
             </el-row>
             <el-row>
               <el-col :span="6">
                 <span class="label">最小单位</span>
-                <span class="content">{{ form.base.smallestUnit }}</span>
+                <span class="content">{{ form.miniUnit }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">包装数量</span>
-                <span class="content">{{ form.base.packageNum }}</span>
+                <span class="content">{{ form.packageNum }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">大包装价</span>
-                <span class="content">{{ form.base.rargePackage }}</span>
+                <span class="content">{{ form.rargePackage }}</span>
               </el-col>
               <el-col :span="6">
                 <span class="label">最新进价</span>
-                <span class="content">{{ form.base.unitPrice }}</span>
+                <span class="content">{{ form.newestUnitPrice }}</span>
               </el-col>
             </el-row>
           </el-col>
@@ -94,45 +94,45 @@
         <el-row class="row">
           <el-col :span="5">
             <span class="label">物品分类</span>
-            <span class="content">{{ form.classification.classification }}</span>
+            <span class="content">{{ form.classification }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">所属库房</span>
-            <span class="content">{{ form.classification.warehouse }}</span>
+            <span class="content">{{ form.supplyCompany }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">库存数量</span>
-            <span class="content">{{ form.classification.inventory }}</span>
+            <span class="content">{{ form.inventory }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">打包标识</span>
-            <span class="content">{{ form.classification.packageLogo }}</span>
+            <span class="content">{{ form.packFlag }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">财务收费</span>
-            <span class="content">{{ form.classification.financeCharges }}</span>
+            <span class="content">{{ form.financialChargeFlag }}</span>
           </el-col>
         </el-row>
         <el-row>
           <el-col :span="5">
             <span class="label">有效范围</span>
-            <span class="content">{{ form.classification.effectiveRange }}</span>
+            <span class="content">{{ form.effctiveRange }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">费用类别</span>
-            <span class="content">{{ form.classification.costCategories }}</span>
+            <span class="content">{{ form.costCategories }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">特列类别</span>
-            <span class="content">{{ form.classification.specialCategories }}</span>
+            <span class="content">{{ form.specialCategory }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">耗材标识</span>
-            <span class="content">{{ form.classification.materialIdentification }}</span>
+            <span class="content">{{ form.materialIdentification }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">财务审核</span>
-            <span class="content">{{ form.classification.financialAudit }}</span>
+            <span class="content">{{ form.financialAuditFlag }}</span>
           </el-col>
         </el-row>
       </el-collapse-item>
@@ -142,7 +142,7 @@
           <el-tab-pane label="出库" name="outbound" />
           <el-tab-pane label="入库" name="instorage" />
         </el-tabs>
-        <el-table ref="table" :data="tableData" style="width: 100%">
+        <el-table ref="table" v-loading="listLoading" :data="tableData" style="width: 100%">
           <el-table-column label="序号" type="index" width="100" />
           <el-table-column label="出/入库" prop="inAndOut" />
           <el-table-column label="数量" prop="number" />
@@ -155,23 +155,23 @@
         <el-row>
           <el-col :span="5">
             <span class="label">生产厂商</span>
-            <span class="content">{{ form.vendor.vendorName }}</span>
+            <span class="content">{{ form.manufacturer }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">到期日期</span>
-            <span class="content">{{ form.vendor.dueDate }}</span>
+            <span class="content">{{ form.expireDate }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">注册日期</span>
-            <span class="content">{{ form.vendor.registrationDate }}</span>
+            <span class="content">{{ form.registerDate }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">注册号</span>
-            <span class="content">{{ form.vendor.registrationCode }}</span>
+            <span class="content">{{ form.registerNumber }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">厂商标识</span>
-            <span class="content">{{ form.vendor.Identification }}</span>
+            <span class="content">{{ form.Identification }}</span>
           </el-col>
         </el-row>
       </el-collapse-item>
@@ -179,41 +179,41 @@
         <el-row class="row">
           <el-col :span="5">
             <span class="label">公司名称</span>
-            <span class="content">{{ form.company.companyName }}</span>
+            <span class="content">{{ form.Name }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">公司编码</span>
-            <span class="content">{{ form.company.companyCode }}</span>
+            <span class="content">{{ form.Code }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">拼音编码</span>
-            <span class="content">{{ form.company.pinyinCode }}</span>
+            <span class="content">{{ form.pinyinCode }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">五笔编码</span>
-            <span class="content">{{ form.company.wubiCode }}</span>
+            <span class="content">{{ form.wubiCode }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">自定义码</span>
-            <span class="content">{{ form.company.customCode }}</span>
+            <span class="content">{{ form.customCode }}</span>
           </el-col>
         </el-row>
         <el-row>
           <el-col :span="5">
             <span class="label">公司法人</span>
-            <span class="content">{{ form.company.category }}</span>
+            <span class="content">{{ form.category }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">公司电话</span>
-            <span class="content">{{ form.company.telephone }}</span>
+            <span class="content">{{ form.telephone }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">公司邮箱</span>
-            <span class="content">{{ form.company.mailbox }}</span>
+            <span class="content">{{ form.mailbox }}</span>
           </el-col>
           <el-col :span="10">
             <span class="label">公司地址</span>
-            <span class="content">{{ form.company.address }}</span>
+            <span class="content">{{ form.address }}</span>
           </el-col>
         </el-row>
       </el-collapse-item>
@@ -221,37 +221,37 @@
         <el-row class="row">
           <el-col :span="5">
             <span class="label">合同编号</span>
-            <span class="content">{{ form.contract.contractCode }}</span>
+            <span class="content">{{ form.Code }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">签订日期</span>
-            <span class="content">{{ form.contract.signDate }}</span>
+            <span class="content">{{ form.signDate }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">操作员</span>
-            <span class="content">{{ form.contract.operator }}</span>
+            <span class="content">{{ form.operator }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">操作日期</span>
-            <span class="content">{{ form.contract.saveDate }}</span>
+            <span class="content">{{ form.saveDate }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">合同状态</span>
-            <span class="content">{{ form.contract.status }}</span>
+            <span class="content">{{ form.status }}</span>
           </el-col>
         </el-row>
         <el-row>
           <el-col :span="5">
             <span class="label">合同类别</span>
-            <span class="content">{{ form.contract.contractType }}</span>
+            <span class="content">{{ form.Type }}</span>
           </el-col>
           <el-col :span="5">
             <span class="label">到期日期</span>
-            <span class="content">{{ form.contract.expireDate }}</span>
+            <span class="content">{{ form.expireDate }}</span>
           </el-col>
           <el-col :span="10">
             <span class="label">公司名称</span>
-            <span class="content">{{ form.contract.companyName }}</span>
+            <span class="content">{{ form.Name }}</span>
           </el-col>
         </el-row>
       </el-collapse-item>
@@ -315,13 +315,14 @@
 
 <script>
 import myfilters from '@/components/myfilters'
-
+import api from '@/api'
 export default {
   components: {
     myfilters
   },
   data() {
     return {
+      listLoading: true,
       rules: {
         outboundNum: [
           { required: true, message: '请输入出库数量', trigger: 'blur' },
@@ -344,7 +345,7 @@ export default {
       },
       instorageShow: false,
       instorage: {},
-      form: {
+      form: {/*
         base: {
           itemName: '有齿镊',
           pinyinWriting: 'YCN',
@@ -432,10 +433,10 @@ export default {
           contractType: '销售合同',
           expireDate: '2030年08月09日',
           companyName: '慧扬健康科技有限公司'
-        }
+        } */
       },
       tableData: [
-        {
+        /* {
           inAndOut: '入库',
           number: '1000',
           operator: '张美美',
@@ -462,7 +463,7 @@ export default {
           operator: '张美美',
           saveDate: '2020.08.10 09:32:41',
           identification: '申购入库'
-        }
+        } */
       ],
       title: '',
       activeTabs: 'all',
@@ -471,8 +472,20 @@ export default {
   },
   created() {
     this.title = this.$route.params.title
+    this.fetchData()
   },
   methods: {
+    // 获取物资
+    fetchData() {
+      this.listLoading = true
+      api.toGetsupplies({ id: '745969622049619968' }).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.form = response.data
+        }
+        console.log(response)
+      })
+      this.listLoading = false
+    },
     tabClick() {
       if (this.activeTabs === 'all') {
         this.tableData = this.form.tableData
@@ -500,7 +513,7 @@ export default {
       }
     },
     outboundSubmit() {
-      this.$refs.outbound.validate((valid) => {
+      this.$refs.outbound.validate(async valid => {
         if (valid) {
           this.$message({
             message: '出库成功',
@@ -525,7 +538,7 @@ export default {
       }
     },
     instorageSubmit() {
-      this.$refs.instorage.validate((valid) => {
+      this.$refs.instorage.validate(async valid => {
         if (valid) {
           this.$message({
             message: '入库成功',

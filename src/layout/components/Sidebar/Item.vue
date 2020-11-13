@@ -20,12 +20,13 @@ export default {
       if (icon.includes('el-icon')) {
         vnodes.push(<i class={[icon, 'sub-el-icon']} />)
       } else {
-        vnodes.push(<svg-icon icon-class={icon}/>)
+        vnodes.push(<i class={[icon, 'sub-el-icon', 'iconfont']} />)
+        // vnodes.push(<svg-icon icon-class={icon}/>)
       }
     }
 
     if (title) {
-      vnodes.push(<span slot='title'>{(title)}</span>)
+      vnodes.push(<span class='title' slot='title'>{(title)}</span>)
     }
     return vnodes
   }
@@ -37,5 +38,11 @@ export default {
   color: currentColor;
   width: 1em;
   height: 1em;
+}
+.icon-cangku {
+  font-size: 18px;
+}
+.title {
+  user-select: none;
 }
 </style>

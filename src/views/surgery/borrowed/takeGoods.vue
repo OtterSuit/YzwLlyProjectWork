@@ -1,11 +1,11 @@
 <template>
   <div class="apply-contaniner">
     <myfilters
-      title="确认收货"
+      title="确认回收"
       :back-button="true"
       style="margin-bottom:20px"
     />
-    <el-form ref="form" :model="form" label-width="70px">
+    <el-form ref="form" :model="form" label-width="100px">
       <div class="box">
         <el-row type="flex" justify="space-between">
           <el-col :span="21">
@@ -80,18 +80,18 @@
       </div>
       <div class="box">
         <el-row style="margin-bottom:16px">
-          <span class="title">收货信息</span>
+          <span class="title">回收信息</span>
         </el-row>
         <el-row>
           <el-col :span="13">
-            <el-form-item label="送货人">
+            <el-form-item label="下送人">
               <el-input v-model="form.deliveryman" placeholder="请输入或扫描工牌" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row>
           <el-col :span="13">
-            <el-form-item label="收货人" style="margin-bottom:0">
+            <el-form-item label="回收人" style="margin-bottom:0">
               <el-input v-model="form.consignee" placeholder="请输入或扫描工牌" />
             </el-form-item>
           </el-col>
@@ -99,7 +99,7 @@
       </div>
     </el-form>
     <el-button type="primary" style="height:50px;width:140px" @click="onSubmit">
-      确认收货
+      确认回收
     </el-button>
     <el-dialog title="物品详细" :visible.sync="goodsShow" width="800px">
       <div class="dialog-main">
@@ -134,7 +134,7 @@
             <el-table-column label="包编码" width="260px" />
             <el-table-column label="包名称" />
           </el-table>
-          <div style="width:390px; margin:15px 150px">
+          <div class="dialog-packet">
             <el-input v-model="dialogCoding" placeholder="请输入或扫描包编码" @change="codeChange" />
           </div>
           <el-scrollbar style="height:410px;background: #fff">
@@ -179,7 +179,7 @@ export default {
         orderNum: '10001',
         applyDepartment: '妇一科',
         applicant: '张美华',
-        state: '已发货，待收货',
+        state: '已发放，待回收',
         applyType: '借物申请',
         applyNum: '30',
         applyTime: '2020.08.10 09:54:12'
@@ -224,7 +224,7 @@ export default {
   methods: {
     onSubmit() {
       this.$message({
-        message: '确认收货成功',
+        message: '确认回收成功',
         type: 'success'
       })
       this.$router.back(-1)
@@ -304,15 +304,12 @@ export default {
 .dialog-main-box {
   position: relative;
   height: 500px;
-  background: rgba(246, 246, 246, 1);
+  background: rgb(92, 92, 92);
   border: 1px dotted rgba(175, 179, 192, 1);
   padding: 20px 25px;
 }
 ::v-deep .el-scrollbar__wrap {
   overflow-x: hidden;
-}
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
 }
 ::v-deep .hidden-radio .el-radio__label {
   display: none;

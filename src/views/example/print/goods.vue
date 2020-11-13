@@ -97,7 +97,7 @@
                   <el-table-column label="包名称" width="200" />
                   <el-table-column label="数量" />
                 </el-table>
-                <el-scrollbar style="height:420px;background: #fff">
+                <el-scrollbar class="scrollbar">
                   <el-table :data="tableData" style="width: 100%" :show-header="false">
                     <el-table-column align="center" width="100">
                       <template slot-scope="scope">
@@ -122,7 +122,11 @@
                 <el-row type="flex" justify="space-between">
                   <el-col :span="11">
                     <el-form-item label="打印数量">
-                      <el-input v-model="form.num" />
+                      <el-input-number
+                        v-model="form.num"
+                        controls-position="right"
+                        :min="1"
+                      />
                     </el-form-item>
                   </el-col>
                   <el-col :span="11">
@@ -295,7 +299,7 @@ export default {
 .label-main {
   width: 472px;
   height: 394px;
-  border: 1px dotted #ababab;
+  border: 1px solid #ababab;
   .label-top {
     background-color: #fff;
     padding: 20px;
@@ -371,15 +375,16 @@ export default {
     line-height: 24px;
     margin-bottom: 16px;
   }
+  .scrollbar{
+    height:420px;
+    background: #fff
+  }
 }
 ::v-deep .hidden-radio .el-radio__label {
   display: none;
 }
 ::v-deep .el-scrollbar__wrap {
   overflow-x: hidden;
-}
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
 }
 ::v-deep .el-form-item__label {
   text-align: left;

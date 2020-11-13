@@ -1,6 +1,6 @@
 <template>
   <div style="margin-bottom:10px">
-    <el-form ref="select" :model="select">
+    <el-form ref="select" :model="select" @submit.native.prevent>
       <el-row type="flex" align="middle" justify="space-between">
         <el-col :span="6">
           <div style="height:40px;line-height:40.8px">
@@ -13,62 +13,111 @@
           <el-row type="flex" justify="end" :gutter="10">
             <slot name="header-extent" />
             <el-col v-if="chooseCleaningBox" :span="4">
-              <el-select v-model="select.cleaningBox" placeholder="清洗框/架" @change="cleaningBoxChange">
+              <el-select v-model="select.cleaningBox" placeholder="清洗框/架" clearable @change="cleaningBoxChange">
                 <el-option
+                  v-for="(val, key) in CLEAN_RACK"
+                  :key="val"
+                  :label="val"
+                  :value="key"
+                />
+                <!-- <el-option
                   v-for="item in cleaningBoxOptions"
                   :key="item.value"
                   :label="item.label"
                   :value="item.value"
-                />
+                /> -->
               </el-select>
             </el-col>
             <el-col v-if="chooseCleaningEquipment" :span="4">
-              <el-select v-model="select.cleaningEquipment" placeholder="清洗设备" @change="cleaningEquipmentChange">
+              <el-select v-model="select.cleaningEquipment" placeholder="清洗设备" clearable @change="cleaningEquipmentChange">
                 <el-option
+                  v-for="(val, key) in CLEAN_POT"
+                  :key="val"
+                  :label="val"
+                  :value="key"
+                />
+                <!-- <el-option
                   v-for="item in cleaningEquipmentOptions"
                   :key="item.value"
                   :label="item.label"
                   :value="item.value"
-                />
+                /> -->
               </el-select>
             </el-col>
             <el-col v-if="chooseDepartment" :span="selectSpan">
-              <el-select v-model="select.department" :placeholder="selectPlaceholder" @change="departmentChange">
+              <el-select
+                v-model="select.department"
+                clearable
+                :placeholder="selectPlaceholder"
+                filterable
+                remote
+                reserve-keyword
+                :remote-method="remoteMethodDepartment"
+                :loading="loading"
+                @change="departmentChange"
+              >
+                <el-option
+                  v-for="item in departmentOptions"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.name"
+                />
+              </el-select>
+              <!-- <el-select v-model="select.department" :placeholder="selectPlaceholder" clearable @change="departmentChange">
                 <el-option
                   v-for="item in options"
                   :key="item.value"
                   :label="item.label"
                   :value="item.value"
                 />
+              </el-select> -->
+            </el-col>
+            <el-col v-if="chooseType" :span="4">
+              <el-select v-model="select.type" placeholder="选择类别" clearable @change="typeChange">
+                <!-- <el-option
+                  v-for="item in typeOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                /> -->
+                <el-option
+                  v-for="(val, key) in typeOptions"
+                  :key="val"
+                  :label="val"
+                  :value="key"
+                />
               </el-select>
             </el-col>
             <el-col v-if="chooseStatus" :span="4">
-              <el-select v-model="select.status" placeholder="请选择类别" @change="statusChange">
-                <el-option
+              <el-select v-model="select.status" placeholder="选择状态" clearable @change="statusChange">
+                <!-- <el-option
                   v-for="item in statusOptions"
                   :key="item.value"
                   :label="item.label"
                   :value="item.value"
-                />
-              </el-select>
-            </el-col>
-            <el-col v-if="chooseStates" :span="4">
-              <el-select v-model="select.states" placeholder="请选择状态" @change="statesChange">
+                /> -->
                 <el-option
-                  v-for="item in statesOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
+                  v-for="(val, key) in statusOptions"
+                  :key="val"
+                  :label="val"
+                  :value="key"
                 />
               </el-select>
             </el-col>
             <el-col v-if="searchContent" :span="6">
               <el-input
+                ref="contentinput"
                 v-model="select.content"
+                :type="contentType"
+                prefix-icon="el-icon-search"
+                clearable
                 :placeholder="placeholder"
                 class="search-content"
                 style="display:inline-block"
                 @change="contentChange"
+                @input="contentInput"
+                @blur="contentBlur"
+                @keyup.enter.native="contentEnter"
               />
             </el-col>
             <el-col v-if="chooseDate" :span="4">
@@ -76,10 +125,9 @@
                 <el-date-picker
                   v-model="select.time"
                   :type="dateType"
-                  :clearable="false"
                   :format="format"
                   :value-format="valueFormat"
-                  placeholder="请选择日期"
+                  :placeholder="datePlaceholder"
                   @change="dateChange"
                 />
               </el-form-item>
@@ -128,6 +176,7 @@
 </template>
 
 <script>
+import api from '@/api'
 export default {
   name: 'Myfilters',
   props: {
@@ -141,7 +190,7 @@ export default {
     },
     addifo: {
       type: String,
-      default: ''
+      default: '新增'
     },
     chooseDate: {
       type: Boolean,
@@ -155,7 +204,7 @@ export default {
       type: Boolean,
       default: false
     }, */
-    chooseStatus: {
+    chooseType: {
       type: Boolean,
       default: false
     },
@@ -167,7 +216,7 @@ export default {
       type: Boolean,
       default: false
     },
-    chooseStates: {
+    chooseStatus: {
       type: Boolean,
       default: false
     },
@@ -175,151 +224,16 @@ export default {
       type: Boolean,
       default: false
     },
+    typeOptions: {
+      type: Object,
+      default() {
+        return {}
+      }
+    },
     statusOptions: {
-      type: Array,
+      type: Object,
       default() {
-        return [
-          {
-            value: '全部类别',
-            label: '全部类别'
-          },
-          {
-            value: '回收申请单',
-            label: '回收申请单'
-          },
-          {
-            value: '还物申请单',
-            label: '还物申请单'
-          },
-          {
-            value: '退货申请单',
-            label: '退货申请单'
-          }
-        ]
-      }
-    },
-    options: {
-      type: Array,
-      default() {
-        return [
-          {
-            value: '全部科室',
-            label: '全部科室'
-          },
-          {
-            value: '内科',
-            label: '内科'
-          },
-          {
-            value: '儿科',
-            label: '儿科'
-          },
-          {
-            value: '妇科',
-            label: '妇科'
-          },
-          {
-            value: '耳鼻咽喉科',
-            label: '耳鼻咽喉科'
-          },
-          {
-            value: '男科',
-            label: '男科'
-          },
-          {
-            value: '外科',
-            label: '外科'
-          }
-        ]
-      }
-    },
-    boxsOptions: {
-      type: Array,
-      default() {
-        return [
-          {
-            value: '内科',
-            label: '内科'
-          },
-          {
-            value: '儿科',
-            label: '儿科'
-          },
-          {
-            value: '妇科',
-            label: '妇科'
-          },
-          {
-            value: '耳鼻咽喉科',
-            label: '耳鼻咽喉科'
-          },
-          {
-            value: '男科',
-            label: '男科'
-          },
-          {
-            value: '外科',
-            label: '外科'
-          }
-        ]
-      }
-    },
-    equipmentOptions: {
-      type: Array,
-      default() {
-        return [
-          {
-            value: '内科',
-            label: '内科'
-          },
-          {
-            value: '儿科',
-            label: '儿科'
-          },
-          {
-            value: '妇科',
-            label: '妇科'
-          },
-          {
-            value: '耳鼻咽喉科',
-            label: '耳鼻咽喉科'
-          },
-          {
-            value: '男科',
-            label: '男科'
-          },
-          {
-            value: '外科',
-            label: '外科'
-          }
-        ]
-      }
-    },
-    statesOptions: {
-      type: Array,
-      default() {
-        return [
-          {
-            value: '全部状态',
-            label: '全部状态'
-          },
-          {
-            value: '正常',
-            label: '正常'
-          },
-          {
-            value: '已作废',
-            label: '已作废'
-          },
-          {
-            value: '已上架',
-            label: '已上架'
-          },
-          {
-            value: '已下架',
-            label: '已下架'
-          }
-        ]
+        return {}
       }
     },
     selectSpan: {
@@ -328,7 +242,7 @@ export default {
     },
     selectPlaceholder: {
       type: String,
-      default: '请选择科室'
+      default: '选择科室'
     },
     addButton: {
       type: Boolean,
@@ -344,7 +258,7 @@ export default {
     }, */
     valueFormat: {
       type: String,
-      default: ''
+      default: 'yyyy-MM-dd'
     },
     format: {
       type: String,
@@ -364,7 +278,7 @@ export default {
     },
     addIcon: {
       type: String,
-      default: ''
+      default: 'el-icon-circle-plus-outline'
     },
     addSpan: {
       type: Number,
@@ -402,61 +316,61 @@ export default {
       type: Boolean,
       default: false
     },
-    cleaningBoxOptions: {
-      type: Array,
-      default() {
-        return [
-          {
-            value: '清洗框/架',
-            label: '清洗框/架'
-          },
-          {
-            value: '架01',
-            label: '架01'
-          },
-          {
-            value: '架02',
-            label: '架02'
-          }
-        ]
-      }
-    },
-    cleaningEquipmentOptions: {
-      type: Array,
-      default() {
-        return [
-          {
-            value: '清洗设备',
-            label: '清洗设备'
-          },
-          {
-            value: '清洗机01',
-            label: '清洗机01'
-          },
-          {
-            value: '清洗机02',
-            label: '清洗机02'
-          }
-        ]
-      }
-    },
     buttonType: {
       type: String,
       default: 'primary'
+    },
+    datePlaceholder: {
+      type: String,
+      default: '选择日期'
+    },
+    contentType: {
+      type: String,
+      default: 'text'
     }
   },
   data() {
     return {
       select: {
-        time: Date.now(),
-        department: '全部科室',
+        time: null,
+        department: '',
         // name: '',
         content: '',
-        status: '全部类别',
-        cleaningBox: '清洗框/架',
-        cleaningEquipment: '清洗设备',
-        states: '全部状态'
-      }
+        type: '',
+        cleaningBox: '',
+        cleaningEquipment: '',
+        status: ''
+      },
+      CLEAN_RACK: null,
+      CLEAN_POT: null,
+      loading: null,
+      departmentOptions: []
+    }
+  },
+  created() {
+    const constantCodes = []
+    if (this.chooseCleaningBox) {
+      constantCodes.push('CLEAN_RACK')
+    }
+    if (this.chooseCleaningEquipment) {
+      constantCodes.push('CLEAN_POT')
+    }
+    if (constantCodes.length > 0) {
+      api.toconstanttypeBatch({
+        constantCodes: constantCodes
+      }).then(response => {
+        constantCodes.forEach(item => {
+          this[item] = response.data.constantsDetail[item]
+        })
+      })
+    }
+    if (this.chooseDepartment) {
+      this.loading = true
+      api.todepartmentPage().then(response => {
+        console.log(response)
+        this.departmentOptions = response.data.records
+        this.loading = false
+      })
     }
   },
   methods: {
@@ -496,14 +410,17 @@ export default {
     contentChange() {
       this.$emit('contentChange', this.select.content)
     },
+    contentInput() {
+      this.$emit('contentInput', this.select.content)
+    },
     departmentChange() {
       this.$emit('departmentChange', this.select.department)
     },
+    typeChange() {
+      this.$emit('typeChange', this.select.type)
+    },
     statusChange() {
       this.$emit('statusChange', this.select.status)
-    },
-    statesChange() {
-      this.$emit('statesChange', this.select.states)
     },
     /* editClick() {
       this.$emit('editClick')
@@ -520,6 +437,20 @@ export default {
     },
     cleaningEquipmentChange() {
       this.$emit('cleaningEquipmentChange', this.select.cleaningEquipment)
+    },
+    contentBlur() {
+      this.$emit('contentBlur')
+    },
+    contentEnter() {
+      this.$emit('contentEnter')
+    },
+    remoteMethodDepartment(query) {
+      this.loading = true
+      api.todepartmentPage({ name: query }).then(response => {
+        console.log(response)
+        this.departmentOptions = response.data.records
+        this.loading = false
+      })
     }
   }
 }

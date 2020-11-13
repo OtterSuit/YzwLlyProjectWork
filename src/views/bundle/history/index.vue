@@ -4,119 +4,105 @@
     <myfilters
       title="历史记录"
       :content="content"
-      placeholder="包名称/包编号/审核人/封包人"
+      placeholder="包名称/包编号"
       :choose-date="true"
-      format="yyyy.MM.dd"
       :search-content="true"
       @contentChange="contentChange"
       @dateChange="dateChange"
     />
     <!-- 头部 end -->
     <!-- table -->
-    <el-table :data="tableData" style="width: 100%">
+    <el-table v-loading="listLoading" :data="tableData" style="width: 100%">
       <el-table-column label="序号" type="index" width="100" />
-      <el-table-column prop="packageNum" label="包编号" />
-      <el-table-column prop="packageName" label="包名称" />
-      <el-table-column prop="number" label="数量" />
+      <el-table-column prop="serialNumber" label="包编号" />
+      <el-table-column prop="packetName" label="包名称" />
+      <el-table-column prop="packetdCount" label="数量" />
       <el-table-column label="审核人/时间">
         <template slot-scope="scope">
-          {{ scope.row.auditPerson }}
+          {{ scope.row.auditUser }}
           <br>
           <span class="second-row">{{ scope.row.auditTime }}</span>
         </template>
       </el-table-column>
       <el-table-column label="封包人/时间">
         <template slot-scope="scope">
-          {{ scope.row.packagePerson }}
+          {{ scope.row.lastUser }}
           <br>
-          <span class="second-row">{{ scope.row.packageTime }}</span>
+          <span class="second-row">{{ scope.row.lastTime }}</span>
         </template>
       </el-table-column>
     </el-table>
     <!-- table end -->
+    <my-pagination :total="totalCount" methods="getSubPacketPage" :conditions="conditions" />
   </div>
 </template>
 
 <script>
 import myfilters from '@/components/myfilters'
+import myPagination from '@/components/MyPagination'
+import api from '@/api'
 
 export default {
   components: {
-    myfilters
+    myfilters,
+    myPagination
   },
   data() {
     return {
-      tableData: [
-        {
-          packageNum: '1001',
-          packageName: '糖足包',
-          number: 12,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          packagePerson: '赵美丽',
-          packageTime: '2020.08.10 09:45:32'
-        },
-        {
-          packageNum: '10003',
-          packageName: '脐穿包',
-          number: 16,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          packagePerson: '赵美丽',
-          packageTime: '2020.08.10 09:45:32'
-        },
-        {
-          packageNum: '10004',
-          packageName: '神一脑室引流包',
-          number: 6,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          packagePerson: '赵美丽',
-          packageTime: '2020.08.10 09:45:32'
-        },
-        {
-          packageNum: '10005',
-          packageName: '血透室缝合包',
-          number: 10,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          packagePerson: '赵美丽',
-          packageTime: '2020.08.10 09:45:32'
-        },
-        {
-          packageNum: '20010-001',
-          packageName: '外来器械包(拆1)',
-          number: 1,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          packagePerson: '赵美丽',
-          packageTime: '2020.08.10 09:45:32'
-        },
-        {
-          packageNum: '20010-002',
-          packageName: '外来器械包(拆2)',
-          number: 1,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          packagePerson: '赵美丽',
-          packageTime: '2020.08.10 09:45:32'
-        }
-      ]
+      tableData: [],
+      ssd_packet_task_status: null,
+      listLoading: false,
+      conditions: {
+        status: '4',
+        keyword: null,
+        startPacketTimeOneDay: null
+      },
+      totalCount: 0
     }
   },
   computed: {
     // 计算tableData有几条数据
     content() {
-      return '共' + this.tableData.length + '条数据'
+      return '共' + this.totalCount + '条数据'
     }
   },
+  created() {
+    this.fetchData()
+  },
   methods: {
+    fetchData() {
+      this.listLoading = true
+      // 4: "封包完成"
+      api.getSubPacketPage({ status: '4' }).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          console.log(response)
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.ssd_packet_task_status = response.data.dictData.ssd_packet_task_status
+          this.listLoading = false
+        }
+      })
+    },
     // 输入框改变
     contentChange(content) {
-      console.log(content)
+      this.$set(this.conditions, 'keyword', content)
+      this.selectChange()
     },
+    // 时间改变
     dateChange(date) {
-      console.log(date)
+      this.$set(this.conditions, 'startPacketTimeOneDay', date)
+      this.selectChange()
+    },
+    selectChange() {
+      this.$set(this.conditions, 'pageNo', 1)
+      this.listLoading = true
+      api.getSubPacketPage(this.conditions).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.listLoading = false
+        }
+      })
     }
   }
 }

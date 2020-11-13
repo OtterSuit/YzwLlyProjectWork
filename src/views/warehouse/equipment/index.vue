@@ -5,13 +5,13 @@
       :content="content"
       :instorage-button="true"
       :outbound-button="true"
-      :choose-status="true"
-      :status-options="statusOptions"
+      :choose-type="true"
+      :type-options="typeOptions"
       :search-content="true"
       placeholder="器械编号/名称"
       @outboundClick="outboundClick"
       @instorageClick="instorageClick"
-      @statusChange="statusChange"
+      @typeChange="typeChange"
       @contentChange="contentChange"
     />
     <el-table :data="tableData" style="width: 100%">
@@ -195,7 +195,7 @@ export default {
           outbound: 1000
         }
       ],
-      statusOptions: [
+      typeOptions: [
         {
           value: '全部类别',
           label: '全部类别'
@@ -231,7 +231,7 @@ export default {
       }
     },
     outboundSubmit() {
-      this.$refs.outbound.validate((valid) => {
+      this.$refs.outbound.validate(async valid => {
         if (valid) {
           this.$message({
             message: '出库成功',
@@ -255,7 +255,7 @@ export default {
       }
     },
     instorageSubmit() {
-      this.$refs.instorage.validate((valid) => {
+      this.$refs.instorage.validate(async valid => {
         if (valid) {
           this.$message({
             message: '入库成功',
@@ -300,7 +300,7 @@ export default {
         logo: ''
       }
     },
-    statusChange(status) {
+    typeChange(status) {
       console.log(status)
     },
     contentChange(content) {

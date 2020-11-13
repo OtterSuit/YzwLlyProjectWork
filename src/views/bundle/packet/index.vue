@@ -1,5 +1,5 @@
 <template>
-  <div style="padding:30px">
+  <div class="packet-contaniner">
     <!-- 头部 -->
     <myfilters
       title="任务列表"
@@ -12,27 +12,28 @@
     />
     <!-- 头部 end -->
     <!-- table -->
-    <el-table :data="tableData" style="width: 100%">
+    <el-table v-loading="listLoading" :data="tableData" style="width: 100%">
       <el-table-column label="序号" type="index" width="100" />
-      <el-table-column prop="packageNum" label="包编号" />
-      <el-table-column prop="packageName" label="包名称" />
-      <el-table-column prop="number" label="数量" />
+      <el-table-column prop="serialNumber" label="包编号" />
+      <el-table-column prop="packetName" label="包名称" />
+      <el-table-column prop="totalPacketCount" label="数量" width="100" />
       <el-table-column label="审核人/时间">
         <template slot-scope="scope">
-          {{ scope.row.auditPerson }}
+          {{ scope.row.auditUser }}
           <br>
           <span class="second-row">{{ scope.row.auditTime }}</span>
         </template>
       </el-table-column>
       <el-table-column label="状态">
         <template slot-scope="scope">
-          <div :class="stateColor(scope.row.state)">
-            <i :class="stateIcon(scope.row.state)" />
+          <div :class="stateColor(scope.row.status)">
+            <i :class="stateIcon(scope.row.status)" />
             {{ state(scope.row) }}
           </div>
         </template>
       </el-table-column>
-      <el-table-column align="right">
+      <!-- 包内器械以及图片视频 -->
+      <el-table-column align="right" width="80">
         <template slot-scope="scope">
           <el-button
             slot="reference"
@@ -42,98 +43,124 @@
           >封包</el-button>
         </template>
       </el-table-column>
+      <!-- 封包动作 -->
+      <el-table-column align="right" width="80">
+        <template slot-scope="scope">
+          <el-button
+            slot="reference"
+            size="mini"
+            type="primary"
+            icon="printer"
+            @click="addClick(scope.$index, scope.row)"
+          >验收</el-button>
+        </template>
+      </el-table-column>
     </el-table>
     <!-- table end -->
+    <my-pagination :total="totalCount" methods="getSubPacketPage" :conditions="conditions" />
+    <!-- 标签打印 -->
     <el-dialog title="器械包标签打印" :visible.sync="printShow" width="95%">
       <div class="dialog-main">
         <el-row :gutter="20">
+          <!-- 器械包 -->
           <el-col :span="12">
             <div class="dialog-main-box">
               <div class="box-title">请选择器械包</div>
-              <div style="height:470px">
-                <el-table :data="tableData" style="width: 100%" class="hidden-table">
-                  <el-table-column label="选择" align="center" width="100" />
-                  <el-table-column label="包名称" width="200" />
-                  <el-table-column label="数量" />
+              <el-col :span="15">
+                <el-input v-model="conditions.keyword" class="search-input" placeholder="物品名称/编码" @keyup.enter.native="contentChange(conditions.keyword)" />
+                <el-button icon="el-icon-search" type="primary" @click="contentChange(conditions.keyword)">搜索</el-button>
+              </el-col>
+              <el-col :span="4">
+                <my-pagination :background="true" :total="totalCount" methods="getSubPacketPage" :table-data="['$parent','$parent','$parent','$parent','tableData']" :conditions="conditions" />
+              </el-col>
+              <el-table :data="tableData" style="width: 100%" class="hidden-table">
+                <el-table-column label="选择" align="center" width="100" />
+                <el-table-column label="包名称" width="200" />
+                <el-table-column label="数量" />
+              </el-table>
+              <el-scrollbar class="scrollbar">
+                <el-table :data="tableData" style="width: 100%" :show-header="false">
+                  <el-table-column align="center" width="100">
+                    <template slot-scope="scope">
+                      <el-radio
+                        v-model="taskId"
+                        :label="scope.row.id"
+                        class="hidden-radio"
+                      />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="packetName" width="200" />
+                  <el-table-column prop="totalPacketCount" />
                 </el-table>
-                <el-scrollbar style="height:420px;background: #fff">
-                  <el-table :data="tableData" style="width: 100%" :show-header="false">
-                    <el-table-column align="center" width="100">
-                      <template slot-scope="scope">
-                        <el-radio
-                          v-model="packageName"
-                          :label="scope.row.packageNum"
-                          class="hidden-radio"
-                        />
-                      </template>
-                    </el-table-column>
-                    <el-table-column prop="packageName" width="200" />
-                    <el-table-column prop="number" />
-                  </el-table>
-                </el-scrollbar>
-              </div>
+              </el-scrollbar>
             </div>
           </el-col>
+          <!-- 标签表单 -->
           <el-col :span="12">
             <div class="dialog-main-box">
               <div class="box-title">选择标签模板</div>
-              <el-form ref="form" :model="form" label-width="80px">
+              <el-form ref="form" :model="printForm" label-width="80px" :rules="rules">
                 <el-row type="flex" justify="space-between">
                   <el-col :span="11">
-                    <el-form-item label="标签大小">
-                      <el-select v-model="form.size" placeholder="请选择标签大小">
-                        <el-option label="小号 50x30mm" value="小号 50x30mm" />
-                        <el-option label="中号 60x50mm" value="中号 60x50mm" />
-                      </el-select>
+                    <el-form-item label="打印数量" prop="totalPacketCount">
+                      <el-input-number
+                        ref="countInputs"
+                        v-model="printForm.totalPacketCount"
+                        controls-position="right"
+                        :min="1"
+                        :disabled="taskId===null"
+                      />
                     </el-form-item>
                   </el-col>
                   <el-col :span="11">
                     <el-form-item label="标签样式">
-                      <el-select v-model="form.style" placeholder="请选择标签样式">
-                        <el-option label="模板样式1" value="模板样式1" />
-                        <el-option label="模板样式2" value="模板样式2" />
-                        <el-option label="模板样式3" value="模板样式3" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row type="flex" justify="space-between">
-                  <el-col :span="11">
-                    <el-form-item label="打印数量">
-                      <el-input v-model="form.num" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="11">
-                    <el-form-item label="灭菌人">
-                      <el-select v-model="form.antisepsisPerson" placeholder="请选择灭菌人">
-                        <el-option label="李丽丽" value="李丽丽" />
-                        <el-option label="张美丽" value="张美丽" />
+                      <el-select v-model="printForm.style" placeholder="请选择标签样式" :disabled="taskId===null">
+                        <el-option label="模板样式1" :value="1" />
+                        <el-option label="模板样式2" :value="2" />
                       </el-select>
                     </el-form-item>
                   </el-col>
                 </el-row>
               </el-form>
               <el-row>
-                <el-col :span="6">
+                <el-col :span="4">
                   <div class="label-title">标签预览</div>
                 </el-col>
-                <el-col :span="18">
-                  <div class="label-box">
-                    <el-row :gutter="20">
+                <el-col :span="20">
+                  <div v-show="printForm.style===1" class="label-main">
+                    <div class="label-top">
                       <el-col :span="12">
-                        <div class="label-box-title-top1">{{ form.packageName }}</div>
-                        <div class="label-box-title-top2">{{ form.packageNum }}</div>
+                        <div class="packet-name">{{ printForm.packetName }}</div>
+                        <div class="packet-code">{{ printForm.serialNumber }}</div>
+                      </el-col>
+                      <el-col :span="12" class="img-col">
+                        <MyQrcode text="标签模板样式1" class="erwm-img" :size="180" />
+                      <!-- <img :src="erwmURL" class="erwm-img"> -->
+                      </el-col>
+                    </div>
+                    <div class="label-bottom">
+                      <div class="packet-bottom">封包人： 示例姓名</div>
+                      <div class="packet-bottom">封包日期: 2020.01.01</div>
+                    </div>
+                  </div>
+                  <div v-show="printForm.style===2" class="label-main">
+                    <div class="label-top">
+                      <el-col :span="12" class="img-col">
+                        <MyQrcode text="标签模板样式2" class="erwm-img" :size="180" />
+                      <!-- <img :src="erwmURL" class="erwm-img"> -->
                       </el-col>
                       <el-col :span="12">
-                        <img class="label-box-img" src="@/assets/images/erwm.png">
+                        <div class="packet-name">{{ printForm.packetName }}</div>
+                        <div class="packet-code">{{ printForm.serialNumber }}</div>
                       </el-col>
-                    </el-row>
-                    <div class="label-box-bottom">
-                      <div class="label-box-bottom-content">封包人：{{ form.antisepsisPerson }}</div>
-                      <div class="label-box-bottom-content">封包日期：{{ getDate() }}</div>
+                    </div>
+                    <div class="label-bottom">
+                      <div class="packet-bottom">封包人： 示例姓名</div>
+                      <div class="packet-bottom">封包日期: 2020.01.01</div>
                     </div>
                   </div>
                 </el-col>
+
               </el-row>
             </div>
           </el-col>
@@ -144,18 +171,78 @@
         <el-button type="primary" @click="printSubmit">确定打印</el-button>
       </div>
     </el-dialog>
+    <!-- 标签打印结束 -->
+    <!-- 验收弹窗 -->
+    <el-dialog v-el-drag-dialog :visible.sync="show" width="95%">
+      <template slot="title">
+        <span style="font-size:18px">{{ dialogTitle }}</span>
+        <span class="tinytitle">请扫描需要{{ dialogTitle }}的器械包条码</span>
+      </template>
+      <div class="dialog-box">
+        <!-- table header -->
+        <el-table :data="row.packet" style="100%" class="hidden-table">
+          <el-table-column label="序号" width="150px" />
+          <el-table-column label="包编码" width="260px" />
+          <el-table-column label="包名称" />
+        </el-table>
+        <!-- table header end -->
+        <!-- scrollbar -->
+        <el-scrollbar class="scrollbar">
+          <div class="dialog-packet">
+            <el-form ref="form" :model="form" :rules="rules" @submit.native.prevent>
+              <el-form-item prop="id">
+                <el-input
+                  ref="inInputs"
+                  v-model.trim="form.id"
+                  type="tel"
+                  placeholder="请输入或扫描包编码"
+                  @keyup.enter.native="getId()"
+                  @input="checkInput"
+                  @blur="getFocus"
+                />
+              </el-form-item>
+            </el-form>
+          </div>
+          <!-- table body -->
+          <el-table :data="row.packet" style="100%" :show-header="false">
+            <el-table-column type="index" width="150px" />
+            <el-table-column prop="id" width="260px" />
+            <el-table-column prop="name" />
+            <el-table-column width="100px">
+              <template slot-scope="scope">
+                <i
+                  class="el-icon-delete base-color delete-icon"
+                  @click="handleDelete(scope.$index,scope.row)"
+                />
+              </template>
+            </el-table-column>
+          </el-table>
+          <!-- table body end -->
+        </el-scrollbar>
+        <!-- scrollbar end -->
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="bgc" @click="show=false">取消</el-button>
+        <el-button type="primary" :loading="buttonLoading" @click="handleSign()">确定{{ dialogTitle }}</el-button>
+      </div>
+    </el-dialog>
+    <!-- 验收弹窗结束 -->
+    <!-- 封包弹窗 -->
     <el-dialog :visible.sync="packageShow" width="95%" class="package-dialog">
       <template slot="title">
         <el-row>
           <el-col class="inline-col">
-            <img class="dialog-title-img" :src="imgSrc" @click="imgShow=true">
+            <div v-if="imgSrc===null" class="default-img">
+              暂无图片
+            </div>
+            <img v-else class="dialog-title-img" :src="imgSrc" @click="imgShow=true">
           </el-col>
           <el-col class="inline-col">
             <el-row>
-              <div class="dialog-title-top">{{ tableData[editIndex].packageName }}</div>
+              <div class="dialog-title-top"><!-- {{ tableData[editIndex].packetName }} -->{{ row.packetName }}</div>
             </el-row>
             <el-row>
-              <div class="dialog-title-bottom">包唯一码：{{ tableData[editIndex].packageNum }}</div>
+              <div class="dialog-title-bottom">包唯一码：<!-- {{ tableData[editIndex].serialNumber }} -->{{ row.serialNumber }}</div>
             </el-row>
             <el-row>
               <div class="dialog-title-bottom">器械数量：{{ instrumentNum(instrumentData) }}</div>
@@ -163,13 +250,9 @@
           </el-col>
           <el-col class="inline-col">
             <el-row class="title-right-row">
-              <el-col :span="12">
-                <div class="right-row-num">{{ tableData[editIndex].number }}</div>
+              <el-col>
+                <div class="right-row-num"><!-- {{ tableData[editIndex].totalPacketCount }} -->{{ row.totalPacketCount }}</div>
                 <div class="right-row-content">任务数量</div>
-              </el-col>
-              <el-col :span="12">
-                <div class="right-row-num">{{ tableData[editIndex].complete }}</div>
-                <div class="right-row-content">已完成</div>
               </el-col>
             </el-row>
           </el-col>
@@ -181,32 +264,22 @@
             <div class="dialog-main-box">
               <div class="box-title">
                 <span>请清点器械并打包</span>
-                <el-button
-                  v-if="tableData[editIndex].type&&tableData[editIndex].type==='foreign'&&tableData[editIndex].state!==1"
-                  type="bgc"
-                  size="mini"
-                  style="float:right"
-                  @click="unpackingClick"
-                >拆包</el-button>
               </div>
               <div style="height:400px">
-                <el-table :data="instrumentData" style="width: 100%" class="hidden-table">
+                <el-table v-loading="dialogLoading" :data="instrumentData" style="width: 100%" class="hidden-table">
                   <el-table-column label="序号" width="100" />
                   <el-table-column label="器械名称" />
                   <el-table-column label="数量" />
                 </el-table>
-                <el-scrollbar style="height:350px;background: #fff">
+                <el-scrollbar class="scrollbar">
                   <el-table :data="instrumentData" style="width: 100%" :show-header="false">
                     <el-table-column type="index" width="100" />
                     <el-table-column>
                       <template slot-scope="scope">
-                        <span
-                          v-if="tableData[editIndex].type&&tableData[editIndex].type==='foreign'"
-                        >【外】</span>
                         {{ scope.row.name }}
                       </template>
                     </el-table-column>
-                    <el-table-column prop="num" />
+                    <el-table-column prop="itemQuantity" />
                   </el-table>
                 </el-scrollbar>
               </div>
@@ -220,129 +293,25 @@
                 </el-col>
                 <el-col class="inline-col">
                   <el-tabs v-model="activeName" style="height:40px">
-                    <el-tab-pane label="图片" name="packageImage" />
-                    <el-tab-pane label="视频" name="packageVideo" />
+                    <el-tab-pane label="图片" name="imagesCourse" />
+                    <el-tab-pane label="视频" name="videosCourse" />
                   </el-tabs>
                 </el-col>
               </el-row>
-              <transition name="fade-transform" mode="out-in">
-                <component :is="isComponent" />
+              <transition v-loading="dialogLoading" name="fade-transform" mode="out-in">
+                <component :is="isComponent" v-if="courseImg[activeName]!==null" :src="courseImg" />
+                <div v-else class="defaultCourse">
+                  暂无<span v-if="activeName==='imagesCourse'">图片</span><span v-else>视频</span>
+                  <br>
+                  请上传后再查看
+                </div>
               </transition>
             </div>
           </el-col>
         </el-row>
       </div>
       <div slot="footer" class="dialog-footer">
-        <el-button type="bgc" @click="packageShow=false">取消</el-button>
-        <el-button
-          v-if="tableData[editIndex].complete===tableData[editIndex].number-1"
-          type="primary"
-          @click="packageSubmit(true)"
-        >打包完成</el-button>
-        <el-button
-          v-else-if="tableData[editIndex].complete<tableData[editIndex].number-1"
-          type="primary"
-          @click="packageSubmit(false)"
-        >打包完成，继续打包</el-button>
-      </div>
-    </el-dialog>
-    <el-dialog :visible.sync="unpackingShow" width="95%" class="unpacking-dialog">
-      <template slot="title">
-        <el-row>
-          <el-col class="inline-col">
-            <img class="dialog-title-img" :src="imgSrc" @click="imgShow=true">
-          </el-col>
-          <el-col class="inline-col">
-            <el-row>
-              <div class="dialog-title-top">{{ tableData[editIndex].packageName }}</div>
-            </el-row>
-            <el-row>
-              <div class="dialog-title-bottom">包唯一码：{{ tableData[editIndex].packageNum }}</div>
-            </el-row>
-            <el-row>
-              <div class="dialog-title-bottom">器械数量：{{ instrumentNum(instrumentData) }}</div>
-            </el-row>
-          </el-col>
-          <el-col class="inline-col">
-            <el-row class="title-right-row">
-              <el-col :span="12">
-                <div class="right-row-num">{{ editableTabs.length }}</div>
-                <div class="right-row-content">任务数量</div>
-              </el-col>
-              <el-col :span="12">
-                <div class="right-row-num">{{ complete }}</div>
-                <div class="right-row-content">已完成</div>
-              </el-col>
-            </el-row>
-          </el-col>
-        </el-row>
-      </template>
-      <div class="dialog-main">
-        <el-row>
-          <el-col>
-            <div class="dialog-main-box">
-              <div class="unpacking-button">
-                <el-button
-                  size="small"
-                  icon="el-icon-circle-plus-outline"
-                  @click="addTab"
-                >
-                  加包
-                </el-button>
-                <el-button
-                  size="small"
-                  type="bgc"
-                  @click="unpackingCancel"
-                >
-                  取消拆包
-                </el-button>
-              </div>
-              <el-tabs v-model="editableTabsValue" closable @tab-remove="removeTab">
-                <el-tab-pane
-                  v-for="(item,index) in editableTabs"
-                  :key="item.name"
-                  :label="'子包'+(index+1)"
-                  :name="item.name"
-                >
-                  <div style="height:390px">
-                    <el-table :data="item.instrumentData" style="width: 100%" class="hidden-table">
-                      <el-table-column label="序号" width="100" />
-                      <el-table-column label="器械名称" width="300" />
-                      <el-table-column label="数量" width="100" />
-                      <el-table-column>
-                        <template slot="header">
-                          {{ '子包'+(index+1)+'(数量)' }}
-                          <span class="children-code">NO.{{ tableData[editIndex].packageNum }}-{{ index+1>=10?'0'+(index+1):'00'+(index+1) }}</span>
-                        </template>
-                      </el-table-column>
-                    </el-table>
-                    <el-scrollbar style="height:340px;background: #fff">
-                      <el-table :data="item.instrumentData" style="width: 100%" :show-header="false">
-                        <el-table-column type="index" width="100" />
-                        <el-table-column width="300">
-                          <template slot-scope="scope">
-                            【外】{{ scope.row.name }}
-                          </template>
-                        </el-table-column>
-                        <el-table-column prop="num" width="100" />
-                        <el-table-column>
-                          <template slot-scope="scope">
-                            <el-input v-model="scope.row.number" placeholder="请输入数量" />
-                          </template>
-                        </el-table-column>
-                      </el-table>
-                    </el-scrollbar>
-                  </div>
-                </el-tab-pane>
-              </el-tabs>
-            </div>
-          </el-col>
-        </el-row>
-      </div>
-      <div slot="footer" class="dialog-footer">
-        <el-button icon="el-icon-printer" type="primary" style="float:left" @click="childrenPrint">打印子包标签</el-button>
-        <el-button type="bgc" @click="unpackingShow=false">取消</el-button>
-        <el-button type="primary" @click="unpackingSubmit">打包完成</el-button>
+        <el-button type="primary" @click="packageShow=false">确定</el-button>
       </div>
     </el-dialog>
     <el-image-viewer v-show="imgShow" :on-close="viewerClose" :url-list="[imgSrc]" />
@@ -351,370 +320,122 @@
 
 <script>
 import myfilters from '@/components/myfilters'
-import { format } from '@/utils/index'
+import myPagination from '@/components/MyPagination'
+import MyQrcode from '@/components/MyQrcode'
+import APIconfig from '@/api/APIconfig'
+// import { format } from '@/utils/index'
 import packageImage from './packageImage'
 import packageVideo from './packageVideo'
-
+import api from '@/api'
 export default {
   components: {
     myfilters,
+    myPagination,
     packageImage,
-    packageVideo
+    packageVideo,
+    MyQrcode
   },
   data() {
     return {
-      activeName: 'packageImage',
+      listLoading: true,
+      rules: {
+        id: [
+          { required: true, message: '输入不能为空', trigger: ['change', 'blur'] }
+        ],
+        totalPacketCount: [
+          { required: true, message: '输入不能为空', trigger: ['change', 'blur'] },
+          { type: 'number', message: '请输入数字', trigger: ['change', 'blur'] }
+        ]
+      },
+      dialogTitle: '验收',
+      form: {},
+      printForm: {},
+      activeName: 'imagesCourse',
+      // 打包教程类型
       componentsList: {
-        packageImage: 'packageImage',
-        packageVideo: 'packageVideo'
+        imagesCourse: 'packageImage',
+        videosCourse: 'packageVideo'
       },
       imgShow: false,
-      imgSrc: require('@/assets/images/qianzi.png'),
-      editIndex: 0,
-      instrumentData: [],
-      tableData: [
-        {
-          packageNum: '1001',
-          packageName: '糖足包',
-          number: 12,
-          complete: 9,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          state: 3
-        },
-        {
-          packageNum: '10003',
-          packageName: '脐穿包',
-          number: 16,
-          complete: 0,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          state: 2
-        },
-        {
-          packageNum: '10004',
-          packageName: '神一脑室引流包',
-          number: 6,
-          complete: 0,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          state: 2
-        },
-        {
-          packageNum: '10005',
-          packageName: '血透室缝合包',
-          number: 10,
-          complete: 0,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          state: 2
-        },
-        {
-          packageNum: '20010',
-          packageName: '外来器械包',
-          number: 1,
-          complete: 0,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          state: 2,
-          type: 'foreign'
-        }
-      ],
-      packageName: '1001',
+      imgSrc: null, // 弹窗header图
+      courseImg: {}, // 图片教程图片
+      editIndex: 0, // 查看中的行数的index
+      instrumentData: [], // 器械数据
+      tableData: [{}],
+      taskId: null, // 打印编号
       printShow: false,
       packageShow: false,
-      unpackingShow: false,
-      form: {},
-      editableTabsValue: '',
-      editableTabs: [],
-      tabIndex: 0,
-      complete: 0
+      show: false,
+      dialogData: [], // 弹窗框数据
+      ssd_packet_task_status: '',
+      row: '',
+      conditions: {
+        statuses: ['2', '3'],
+        keyword: null
+      },
+      totalCount: 0,
+      dialogLoading: true,
+      buttonLoading: false
     }
   },
   computed: {
     // 计算tableData有几条数据
     content() {
-      return '共' + this.tableData.length + '条数据'
+      return '共' + this.totalCount + '条数据'
     },
+    // 判断视频还是图片组件
     isComponent() {
       return this.componentsList[this.activeName]
     }
   },
   watch: {
-    packageName: {
+    taskId: {
       handler(newValue, oldValue) {
         this.tableData.forEach(element => {
-          if (element.packageNum === this.packageName) {
-            this.form.num = element.number
-            this.form.packageName = element.packageName
-            this.form.packageNum = element.packageNum
-            this.form.antisepsisPerson = '张美丽'
+          if (element.id === this.taskId) {
+            const style = this.printForm.style
+            this.printForm = JSON.parse(JSON.stringify(element))
+            this.$set(this.printForm, 'taskId', element.id)
+            this.$set(this.printForm, 'style', style)
           }
         })
       }
     }
   },
+  created() {
+    this.fetchData()
+  },
   methods: {
-    getDate() {
-      return format('yyyy.MM.dd')
-    },
-    getEndDate() {
-      const nowDateObj = new Date()
-      const nowTimeStem = nowDateObj.getTime()
-      const endTimeStem = nowTimeStem + 24 * 60 * 60 * 1000 * 10
-      const endDateObj = new Date(endTimeStem)
-      let month = endDateObj.getMonth() + 1
-      month = month > 10 ? month : '0' + month
-      let day = endDateObj.getDate()
-      day = day > 10 ? day : '0' + day
-      const endDateStr = endDateObj.getFullYear() + '.' + month + '.' + day
-      return endDateStr
-    },
-    print() {
-      this.printShow = true
-      this.form = {
-        size: '中号 60x50mm',
-        style: '模板样式1',
-        num: 12,
-        packageName: '糖足包',
-        packageNum: '1001',
-        antisepsisPerson: '张美丽'
-      }
-    },
-    printSubmit() {
-      this.printShow = false
-      this.$message({
-        message: '打印成功',
-        type: 'success'
-      })
-    },
-    // 表格查看按钮
-    handleShow(index, row) {
-      this.packageShow = true
-      this.editIndex = index
-      if (row.type && row.type === 'foreign') {
-        this.instrumentData = [
-          {
-            name: '威高上肢工具',
-            num: 5
-          },
-          {
-            name: '爱康骨髓泥工具',
-            num: 5
-          },
-          {
-            name: '德骼拜尔关节',
-            num: 5
-          },
-          {
-            name: '关节钻',
-            num: 5
-          },
-          {
-            name: 'PFNA髓内钉',
-            num: 20
+    fetchData() {
+      // 获取数据 2: "等待封包"  3: "封包中"
+      api.getSubPacketPage({ statuses: ['2', '3'] }).then(response => {
+        this.listLoading = true
+        if (response.code === '200' && response.data.busiCode === '1') {
+          console.log(response)
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.ssd_packet_task_status = response.data.dictData.ssd_packet_task_status
+          if (this.tableData.length !== 0) {
+            this.taskId = this.tableData[0].id
           }
-        ]
-      } else {
-        this.instrumentData = [
-          {
-            name: '弯钳(16cm以上)',
-            num: 1
-          },
-          {
-            name: '有齿镊(16cm以上)',
-            num: 1
-          },
-          {
-            name: '无齿镊(16cm以上)',
-            num: 1
-          },
-          {
-            name: '大弯剪(16cm以上)',
-            num: 1
-          },
-          {
-            name: '五官小弯剪',
-            num: 1
-          },
-          {
-            name: '大官小直剪',
-            num: 1
-          },
-          {
-            name: '弯盘',
-            num: 1
-          },
-          {
-            name: '小杯',
-            num: 1
-          },
-          {
-            name: '纱块',
-            num: 3
-          }
-        ]
-      }
-    },
-    packageSubmit(bool) {
-      if (this.tableData[this.editIndex].state === 2) {
-        this.tableData[this.editIndex].state = 3
-      }
-      this.tableData[this.editIndex].complete += 1
-      this.$message({
-        message: '打包成功',
-        type: 'success'
-      })
-      if (bool) {
-        this.packageShow = false
-        this.tableData[this.editIndex].state = 1
-      }
-    },
-    unpackingClick() {
-      this.packageShow = false
-      this.unpackingShow = true
-      this.editableTabsValue = '1'
-      this.tabIndex = 1
-      this.editableTabs = [{
-        name: '1',
-        instrumentData: [
-          {
-            name: '威高上肢工具',
-            num: 5,
-            number: ''
-          },
-          {
-            name: '爱康骨髓泥工具',
-            num: 5,
-            number: ''
-          },
-          {
-            name: '德骼拜尔关节',
-            num: 5,
-            number: ''
-          },
-          {
-            name: '关节钻',
-            num: 5,
-            number: ''
-          },
-          {
-            name: 'PFNA髓内钉',
-            num: 20,
-            number: ''
-          }
-        ]
-      }]
-    },
-    unpackingCancel() {
-      this.packageShow = true
-      this.unpackingShow = false
-    },
-    unpackingSubmit() {
-      for (let index = 0; index < this.editableTabs.length; index++) {
-        const packageNum = this.tableData[this.editIndex].packageNum + '-' + (index + 1 >= 10 ? '0' + (index + 1) : '00' + (index + 1))
-        const obj = {
-          packageNum: packageNum,
-          packageName: '外来器械包(拆' + (index + 1) + ')',
-          number: 1,
-          complete: 1,
-          auditPerson: '赵美丽',
-          auditTime: '2020.08.10 09:52:38',
-          state: 1
+          this.listLoading = false
         }
-        this.tableData.push(obj)
-      }
-      this.editableTabs
-      this.tableData.splice(this.editIndex, 1)
-      this.unpackingShow = false
-      this.$message({
-        message: '打包成功',
-        type: 'success'
       })
-    },
-    addTab() {
-      const newTabName = ++this.tabIndex + ''
-      this.editableTabs.push({
-        name: newTabName,
-        instrumentData: [
-          {
-            name: '威高上肢工具',
-            num: 5,
-            number: ''
-          },
-          {
-            name: '爱康骨髓泥工具',
-            num: 5,
-            number: ''
-          },
-          {
-            name: '德骼拜尔关节',
-            num: 5,
-            number: ''
-          },
-          {
-            name: '关节钻',
-            num: 5,
-            number: ''
-          },
-          {
-            name: 'PFNA髓内钉',
-            num: 20,
-            number: ''
-          }
-        ]
-      })
-      this.editableTabsValue = newTabName
-    },
-    removeTab(targetName) {
-      const tabs = this.editableTabs
-      let activeName = this.editableTabsValue
-      if (activeName === targetName) {
-        tabs.forEach((tab, index) => {
-          if (tab.name === targetName) {
-            const nextTab = tabs[index + 1] || tabs[index - 1]
-            if (nextTab) {
-              activeName = nextTab.name
-            }
-          }
-        })
-      }
-      this.editableTabsValue = activeName
-      this.editableTabs = tabs.filter(tab => tab.name !== targetName)
-    },
-    childrenPrint() {
-      this.$message({
-        message: '打印成功',
-        type: 'success'
-      })
-    },
-    instrumentNum(instrument) {
-      let num = 0
-      instrument.forEach(i => {
-        num += parseInt(i.num)
-      })
-      return num
-    },
-    viewerClose() {
-      this.imgShow = false
-    },
-    // 输入框改变
-    contentChange(content) {
-      console.log(content)
     },
     // 状态标签文字
     state(row) {
       const stateMap = {
-        '1': '封包完成',
+        // '1': '封包完成',
         '2': '等待封包',
-        '3': '正在封包，已完成' + row.complete + '包'
+        '3': '正在封包，已完成' + row.packetdCount + '包',
+        '4': '封包完成'
       }
-      return stateMap[row.state]
+      return stateMap[row.status]
     },
     // 状态的icon
     stateIcon(state) {
       const stateMap = {
-        '1': 'el-icon-success',
+        // '1': 'el-icon-success',
         '2': 'el-icon-time',
         '3': 'icon-fengbao iconfont'
       }
@@ -723,16 +444,287 @@ export default {
     // 状态颜色
     stateColor(state) {
       const stateMap = {
-        '1': 'success-color',
+        // '1': 'success-color',
         '2': 'base-color',
         '3': 'green-color'
       }
       return stateMap[state]
+    },
+    // 验收
+    addClick(index, row) {
+      this.row = row
+      this.show = true
+      this.$nextTick((x) => {
+        this.$refs.inInputs.focus()
+      })
+      // 初始化当前行的包
+      if (this.row.packet === undefined) {
+        this.row.packet = []
+      }
+    },
+    // 确认验收
+    handleSign() {
+      this.dialogData = this.row.packet
+      // 发放请求
+      const instanceIds = [] // 包实例id
+      this.dialogData.forEach(item => {
+        instanceIds.push(item.id)
+      })
+      if (this.dialogData.length === 0) {
+        return this.$message({
+          message: '输入不能为空',
+          type: 'warning'
+        })
+      }
+      this.buttonLoading = true
+      // 验收请求
+      api.tobundleInStorage({ subTaskId: this.row.id, instanceIds: instanceIds }).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          // 判断是完成还是封包中
+          if (this.isCompleted(this.row, this.dialogData.length)) {
+            this.tableData.splice([this.tableData.indexOf(this.row)], 1)
+          } else {
+            this.row.status = '3' // 修改状态
+            this.row.packetdCount += this.dialogData.length // 封包数量添加
+          }
+          this.$message({
+            message: '验收成功',
+            type: 'success'
+          })
+          this.buttonLoading = false
+        }
+      })
+      this.show = false
+    },
+    // 判断是否完成
+    isCompleted(row, count) {
+      if (row.totalPacketCount - (row.packetdCount + count) === 0) {
+        return true
+      } else {
+        return false
+      }
+    },
+    // 控制删除
+    handleDelete(index, row) {
+      this.$message({
+        message: '删除成功',
+        type: 'success'
+      })
+      this.row.packet.splice(index, 1)
+    },
+    // 检查输入id 长度
+    checkInput() {
+      if (this.form.id.length >= 15) {
+        this.getId()
+      }
+    },
+    // 获得焦点
+    getFocus() {
+      this.$refs.inInputs.focus()
+    },
+    // 获取包实例信息
+    getId() {
+      console.log(this.row)
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          const formObj = JSON.parse(JSON.stringify(this.form))
+          this.form = {}
+          formObj.id = formObj.id.trim() // 去除留空
+          // 判断数量
+          if (this.row.totalPacketCount - this.row.packetdCount <= this.row.packet.length) {
+            return this.$message({
+              message: '封包数量已完成',
+              type: 'warning'
+            })
+          }
+          // 判断是否输入
+          for (let i = 0; i < this.row.packet.length; i++) {
+            if (this.row.packet[i].id === formObj.id) {
+              return this.$message({
+                message: '该包已输入',
+                type: 'warning'
+              })
+            }
+          }
+          // 查询该包的信息
+          api.toInstancePacket(formObj).then(response => {
+            if (response.code === '200' && response.data.busiCode === '1') {
+              const data = response.data.records
+              if (data.length === 0) {
+                return this.$message({
+                  message: '请输入正确的编号',
+                  type: 'error'
+                })
+              } else if (this.row.packetDefineId !== data[0].defineId) {
+                return this.$message({
+                  message: '请输入相应包的编号',
+                  type: 'error'
+                })
+              } else if (data[0].status !== '5') {
+                return this.$message({
+                  type: 'error',
+                  message: '该包不处于此状态,请重试'
+                })
+              } else {
+                this.row.packet.unshift(
+                  {
+                    id: data[0].id,
+                    name: data[0].name
+                  }
+                )
+              }
+            }
+          })
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
+      })
+    },
+    // 获取当天日期
+    // getDate() {
+    //   return format('yyyy.MM.dd')
+    // },
+    // // 获取结束日期
+    // getEndDate() {
+    //   const nowDateObj = new Date()
+    //   const nowTimeStem = nowDateObj.getTime()
+    //   const endTimeStem = nowTimeStem + 24 * 60 * 60 * 1000 * 10
+    //   const endDateObj = new Date(endTimeStem)
+    //   let month = endDateObj.getMonth() + 1
+    //   month = month > 10 ? month : '0' + month
+    //   let day = endDateObj.getDate()
+    //   day = day > 10 ? day : '0' + day
+    //   const endDateStr = endDateObj.getFullYear() + '.' + month + '.' + day
+    //   return endDateStr
+    // },
+    // 初始化数据
+    print() {
+      this.printShow = true
+      if (this.tableData.length !== 0) {
+        this.printForm = JSON.parse(JSON.stringify(this.tableData[0]))
+        this.$set(this.printForm, 'taskId', this.tableData[0].id)
+        this.$set(this.printForm, 'style', 1)
+        console.log(this.printForm)
+      }
+      this.$nextTick(x => {
+        this.$refs.countInputs.focus()
+      })
+    },
+    // 确认标签打印
+    printSubmit() {
+      // 无数据情况
+      if (this.taskId === null) {
+        return this.$message({
+          type: 'error',
+          message: '暂无数据打印'
+        })
+      }
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          // 获取封包的包实例
+          api.toPrintPacket({ packetDefineId: this.printForm.packetDefineId, count: this.printForm.totalPacketCount }).then(response => {
+            if (response.code === '200' && response.data.busiCode === '1') {
+              // 打印数据
+              const obj = {
+                name: this.printForm.packetName,
+                serialNumber: this.printForm.serialNumber,
+                style: this.printForm.style,
+                code: response.data.instanceIds
+              }
+              // 获得url
+              const routeUrl = this.$router.resolve({
+                path: '/print/packagePrint',
+                query: {
+                  title: '封包标签打印',
+                  data: JSON.stringify(obj)
+                }
+              })
+              window.open(routeUrl.href, '_blank')
+              this.printShow = false
+            }
+          })
+        } else {
+          this.$message({
+            type: 'error',
+            message: '请正确输入'
+          })
+        }
+      })
+    },
+    // 封包查看按钮
+    handleShow(index, row) {
+      this.packageShow = true
+      this.row = row
+      this.editIndex = index
+      this.dialogLoading = true
+      // 获取当前的定义包id
+      api.topacketPage({ id: this.tableData[index].packetDefineId }).then(response => {
+        console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.courseImg = response.data.records[0] // 传值给组件
+          // 判断有无图片
+          if (response.data.records[0].images !== null) {
+            this.imgSrc = this.getImgSrc(response.data.records[0].images[0].url)
+          } else {
+            this.imgSrc = null
+          }
+          this.dialogLoading = false
+        }
+      })
+      this.dialogLoading = true
+      // 获取器械
+      api.toconpacketdetailPage({ packetId: row.packetDefineId }).then(response => {
+        console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.dialogLoading = false
+          this.instrumentData = response.data.records
+        }
+      })
+    },
+    // 器械总数
+    instrumentNum(instrument) {
+      let num = 0
+      instrument.forEach(i => {
+        num += parseInt(i.itemQuantity)
+      })
+      return num
+    },
+    // 获取图片url
+    getImgSrc(imageInfo) {
+      return `${APIconfig.baseUrl}/${imageInfo}`
+    },
+    // 图片查看关闭
+    viewerClose() {
+      this.imgShow = false
+    },
+    // 输入框改变
+    contentChange(content) {
+      this.$set(this.conditions, 'keyword', content)
+      this.selectChange()
+    },
+    selectChange() {
+      this.$set(this.conditions, 'pageNo', 1)
+      this.listLoading = true
+      api.getSubPacketPage(this.conditions).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.listLoading = false
+        }
+      })
     }
+
   }
 }
 </script>
 <style lang="scss" type="text/scss" scoped>
+.packet-contaniner{
+  padding: 30px;
+  min-height: calc(100vh - 50px);
+}
 .second-row {
   color: #999;
 }
@@ -750,6 +742,18 @@ export default {
     font-size: 18px;
     line-height: 24px;
     margin-bottom: 16px;
+  }
+  .defaultCourse{
+    padding: 20px 0;
+    border: 1px dotted rgba(175, 179, 192, 1);
+    color: rgba(153,153,153,0.7);
+    text-align: center;
+    font-size: 50px;
+    line-height: 100px;
+  }
+  .scrollbar {
+    height:350px;
+    background: #fff;
   }
 }
 .dialog-title-top {
@@ -788,9 +792,7 @@ export default {
 ::v-deep .el-scrollbar__wrap {
   overflow-x: hidden;
 }
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
-}
+
 ::v-deep .el-form-item__label {
   text-align: left;
   font-weight: normal;
@@ -798,43 +800,6 @@ export default {
 .label-title {
   font-size: 18px;
   color: #999;
-}
-.label-box {
-  width: 464px;
-  height: 344px;
-  background-color: #fff;
-  border-radius: 1px;
-  color: black;
-  border: 1px solid rgba(171, 171, 171, 1);
-  .label-box-title-top1 {
-    font-size: 26px;
-    line-height: 40px;
-    margin: 30px 0 20px 20px;
-  }
-  .label-box-title-top2 {
-    font-size: 47px;
-    line-height: 66px;
-    margin-left: 20px;
-  }
-  .label-box-img {
-    float: right;
-    height: 200px;
-    margin-top: 20px;
-    margin-right: 20px;
-    border: 1px solid rgba(155, 155, 155, 1);
-  }
-  .label-box-bottom {
-    margin-top: 20px;
-    height: 102px;
-    padding-top: 9px;
-    background: rgba(246, 246, 246, 1);
-    .label-box-bottom-content {
-      font-size: 24px;
-      color: #666;
-      text-align: center;
-      line-height: 42px;
-    }
-  }
 }
 ::v-deep .unpacking-dialog,
 ::v-deep .package-dialog {
@@ -844,7 +809,7 @@ export default {
   }
   .title-right-row {
     height: 90px;
-    width: 240px;
+    width: 100px;
     padding-top: 13px;
     background: #ececec;
     border-radius: 6px;
@@ -878,53 +843,73 @@ export default {
     line-height: 28px;
   }
 }
-::v-deep .unpacking-dialog {
-  .el-tabs__content {
-    display: block;
-  }
-  .el-tabs__nav-wrap::after {
-    display: none;
-  }
-  .el-input {
-    width: 60%;
-  }
-  .el-tabs__item {
-    padding: 0;
-    width: 100px;
-    font-size: 18px;
-    .el-icon-close {
-      color: rgba(153,153,153,0.5);
-      &:hover {
-        background-color:#f6f6f6;
-      }
-    }
-  }
-  #tab-1 {
-    .el-icon-close,
-    &:hover .el-icon-close {
-      display: none;
-    }
-  }
-  .el-tabs__active-bar {
-    width: 30px !important;
-    height: 3px;
-    margin-left: 7px;
-  }
-  .el-tabs__header {
-    margin-bottom: 10px;
-  }
-  .unpacking-button {
-    position: absolute;
-    right: 25px;
-    z-index: 1;
-    top: 24px;
-  }
-  .children-code {
-    float: right;
-    color: #AFB3C0;
-  }
-}
 ::v-deep .hidden-radio .el-radio__label {
   display: none;
+}
+.dialog-box{
+  margin: 20px;
+  border:1px solid rgba(216,216,216,1);
+  .scrollbar {
+    height:480px;
+    background: #fff
+  }
+}
+
+.el-dropdown-menu__item {
+  padding: 0 20px;
+  text-align: left;
+  width: 110px;
+}
+.tinytitle{
+  font-size: 14px;
+  color: #FF4C4C;
+  margin-left:15px ;
+}
+.label-main {
+  width: 472px;
+  height: 394px;
+  border: 1px solid #ababab;
+  .label-top {
+    background-color: #fff;
+    padding: 20px;
+    height: 247px;
+  }
+  .label-bottom {
+    height: 145px;
+    padding: 20px;
+    background-color: #f6f6f6;
+  }
+  .erwm-img {
+    padding: 10px;
+    float: left;
+    height: 200px;
+    border: 1px solid rgba(155, 155, 155, 1);
+  }
+  .packet-name {
+    font-size: 30px;
+    line-height: 40px;
+    margin-bottom: 20px;
+  }
+  .packet-code {
+    font-size: 40px;
+    line-height: 66px;
+  }
+  .packet-bottom {
+    font-size: 30px;
+    color: #666;
+    line-height: 42px;
+    margin-bottom: 10px;
+  }
+}
+.search-input {
+  width: 60%;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+.default-img {
+  padding:35px 20px;
+  margin-right: 20px;
+  text-align:center;
+  border: 1px solid rgba(155, 155, 155, 1);
 }
 </style>

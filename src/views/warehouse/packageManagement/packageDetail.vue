@@ -3,7 +3,7 @@
     <div style="padding:30px">
       <!-- header -->
       <myfilters
-        title="糖足包明细"
+        :title="title"
         :content="content"
         :back-button="true"
       />
@@ -11,7 +11,7 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <!-- table header -->
-          <el-table :data="tableData" style="width: 100%" class="hidden-table">
+          <el-table v-loading="listLoading" :data="tableData" style="width: 100%" class="hidden-table">
             <el-table-column label="序号" type="index" width="80px" />
             <el-table-column label="项目编码" />
             <el-table-column label="项目名称" width="200px" />
@@ -24,10 +24,14 @@
             <!-- table body -->
             <el-table :data="tableData" style="100%" :show-header="false">
               <el-table-column type="index" width="80px" />
-              <el-table-column prop="projectCode" />
-              <el-table-column prop="projectName" width="200px" />
-              <el-table-column prop="number" />
-              <el-table-column prop="unit" />
+              <el-table-column prop="itemCode" />
+              <el-table-column prop="name" width="200px" />
+              <el-table-column prop="itemQuantity" />
+              <el-table-column>
+                <template slot-scope="scope">
+                  <span>{{ ssd_measure_unit[scope.row.miniUnit] }}</span>
+                </template>
+              </el-table-column>
             </el-table>
             <!-- table body end -->
           </el-scrollbar>
@@ -43,7 +47,7 @@
                     <packageImage />
                   </div>
                 </el-tab-pane>
-                <el-tab-pane label="包装教程" name="viedoCourse">
+                <el-tab-pane label="包装教程" name="videoCourse">
                   <div style="margin:10px 0">
                     <!-- scrollbar -->
                     <el-scrollbar style="height:380px">
@@ -52,8 +56,8 @@
                         <el-collapse-item title="图片教程" name="pictureCourse">
                           <pictureCourse />
                         </el-collapse-item>
-                        <el-collapse-item title="视频教程" name="viedoCourse">
-                          <viedoCourse />
+                        <el-collapse-item title="视频教程" name="videoCourse">
+                          <videoCourse />
                         </el-collapse-item>
                       </el-collapse>
                       <!-- collapse end -->
@@ -71,60 +75,60 @@
       <!-- 底部信息 -->
       <div class="footer-box">
         <!-- form -->
-        <el-form ref="footerData" :model="footerData" label-width="80px">
+        <el-form ref="packetForm" :model="packetForm" label-width="80px">
           <el-row>
             <el-col :span="7">
               <el-form-item label="有效范围">
-                <span>{{ footerData.range }}</span>
+                <span>{{ packetForm.effctiveRange }}</span>
               </el-form-item>
             </el-col>
-            <el-col :span="3">
+            <el-col :span="4">
               <el-form-item label="是否打包">
-                <span>{{ footerData.isPacketed }}</span>
+                <span>{{ ssd_common_boolean[ packetForm.packFlag ] }}</span>
               </el-form-item>
             </el-col>
             <el-col :span="5">
               <el-form-item label="包装材料">
-                <span>{{ footerData.material }}</span>
+                <span>{{ packetForm.packMaterial }}</span>
               </el-form-item>
             </el-col>
           </el-row>
           <el-row>
             <el-col :span="7">
               <el-form-item label="物品分类">
-                <span>{{ footerData.classification }}</span>
+                <span>{{ ssd_packet_category[packetForm.category] }}</span>
               </el-form-item>
             </el-col>
-            <el-col :span="3">
+            <el-col :span="4">
               <el-form-item label="是否清洗">
-                <span>{{ footerData.isCleaned }}</span>
+                <span>{{ ssd_common_boolean[packetForm.cleanFlag] }}</span>
               </el-form-item>
             </el-col>
             <el-col :span="5">
               <el-form-item label="清洗程序">
-                <span>{{ footerData.cleaningProgram }}</span>
+                <span>{{ CLEAN_PROGRAM[packetForm.cleanPro] }}</span>
               </el-form-item>
             </el-col>
           </el-row>
           <el-row>
             <el-col :span="7">
               <el-form-item label="有效天数">
-                <span>{{ footerData.valildDay }}</span>
+                <span>{{ VALID_PERIOD[packetForm.validDay] }}</span>
               </el-form-item>
             </el-col>
-            <el-col :span="3">
+            <el-col :span="4">
               <el-form-item label="是否灭菌">
-                <span>{{ footerData.isSterilized }}</span>
+                <span>{{ ssd_common_boolean [packetForm.sterilizeFlag ] }}</span>
               </el-form-item>
             </el-col>
             <el-col :span="4">
               <el-form-item label="灭菌程序">
-                <span>{{ footerData.sterilizedProgram }}</span>
+                <span>{{ STERILIZE_PROGRAM[packetForm.sterilizePro] }}</span>
               </el-form-item>
             </el-col>
             <el-col :span="5">
               <el-form-item label="灭菌方法">
-                <span>{{ footerData.sterilizedMethod }}</span>
+                <span>{{ STERILIZE_METHOD[packetForm.sterilizeMethod] }}</span>
               </el-form-item>
             </el-col>
           </el-row>
@@ -139,111 +143,87 @@
 <script>
 import myfilters from '@/components/myfilters'
 import packageImage from './packageImage'
-import viedoCourse from './viedoCourse'
+import videoCourse from './videoCourse'
 import pictureCourse from './pictureCourse'
+import api from '@/api'
+
 export default {
   components: {
     myfilters,
     packageImage,
-    viedoCourse,
+    videoCourse,
     pictureCourse
   },
   data() {
     return {
-      activeName: 'packageImage', // tabs选项
-      activeNames: 'pictureCourse', // collapse选项
-      // 底部数据
-      footerData: {
-        range: '本科室及下级科室',
-        classification: '供应室使用',
-        valildDay: 30,
-        isPacketed: '是',
-        isCleaned: '是',
-        isSterilized: '是',
-        material: '无纺布',
-        cleaningProgram: 'P1',
-        sterilizedProgram: 'P1',
-        sterilizedMethod: '高温灭菌'
-      },
-      // table data
-      tableData: [
-        {
-          projectCode: '10001001',
-          projectName: '弯钳(16cm以上)',
-          number: 1,
-          unit: '把'
-        },
-        {
-          projectCode: '10001002',
-          projectName: '有齿镊(16cm以上)',
-          number: 1,
-          unit: '把'
-        },
-        {
-          projectCode: '10001003',
-          projectName: '无齿镊(16cm以上)',
-          number: 1,
-          unit: '把'
-        },
-        {
-          projectCode: '10001004',
-          projectName: '大弯剪(16cm以上)',
-          number: 1,
-          unit: '把'
-        },
-        {
-          projectCode: '10001005',
-          projectName: '弯钳(16cm以上)',
-          number: 1,
-          unit: '把'
-        },
-        {
-          projectCode: '10001006',
-          projectName: '五官小弯剪',
-          number: 1,
-          unit: '把'
-        },
-        {
-          projectCode: '10001007',
-          projectName: '五官小直剪',
-          number: 1,
-          unit: '把'
-        },
-        {
-          projectCode: '10001007',
-          projectName: '弯盘1',
-          number: 1,
-          unit: '个'
-        },
-        {
-          projectCode: '10001007',
-          projectName: '弯盘1',
-          number: 1,
-          unit: '个'
-        },
-        {
-          projectCode: '10001007',
-          projectName: '弯盘1',
-          number: 1,
-          unit: '个'
-        },
-        {
-          projectCode: '10001007',
-          projectName: '弯盘1',
-          number: 1,
-          unit: '个'
-        }
-      ]
+      listLoading: true, // 等待加载
+      id: '', // 包定义id
+      ssd_measure_unit: '', // 单位
+      ssd_common_boolean: '', // 是否
+      ssd_effective_range: '', // 有效范围
+      ssd_packet_category: '', // 包分类
+      CLEAN_PROGRAM: [], // 清洗程序
+      STERILIZE_METHOD: [], // 灭菌方法
+      STERILIZE_PROGRAM: [], // 灭菌程序
+      VALID_PERIOD: [], // 有效天数
+      BARCODE_TYPE: [], // 包装材料
+      activeNames: 'pictureCourse', // 活跃的tab
+      activeName: 'packageImage', // 活跃的collapse
+      packetForm: {}, // 包详细信息
+      tableData: [], // 器械物资
+      totalCount: 0
     }
   },
   computed: {
     // table data length
     content() {
-      return '共' + this.tableData.length + '条数据'
+      return '共' + this.totalCount + '条数据'
     }
   },
+  created() {
+    this.id = this.$route.query.packetId // 获取包定义id
+    this.title = this.$route.query.packetName // 获取包名称
+    this.fetchData() // 获取数据
+  },
   methods: {
-    // 提交按钮点击
+    fetchData() {
+      this.listLoading = true
+      api.toGetpacket({ id: this.id }).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          // 获取字典
+          this.ssd_common_boolean = response.data.dict.ssd_common_boolean
+          this.ssd_packet_category = response.data.dict.ssd_packet_category
+          this.packetForm = response.data.packet // 获取包详细信息
+          this.totalCount = response.data.totalCount
+        }
+      })
+      // 获取常数字典
+      api.toconstanttypeBatch({
+        constantCodes: [
+          'CLEAN_PROGRAM',
+          'STERILIZE_METHOD',
+          'STERILIZE_PROGRAM',
+          'VALID_PERIOD',
+          'BARCODE_TYPE'
+        ]
+      }).then(response => {
+        this.CLEAN_PROGRAM = response.data.constantsDetail.CLEAN_PROGRAM
+        this.STERILIZE_METHOD = response.data.constantsDetail.STERILIZE_METHOD
+        this.STERILIZE_PROGRAM = response.data.constantsDetail.STERILIZE_PROGRAM
+        this.VALID_PERIOD = response.data.constantsDetail.VALID_PERIOD
+        this.BARCODE_TYPE = response.data.constantsDetail.BARCODE_TYPE
+      })
+      // 获取包内物资
+      api.toconpacketdetailPage({ packetId: this.id }).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.records // 获取器械物资
+          this.ssd_measure_unit = response.data.dictData.ssd_measure_unit // 获取单位
+        }
+        this.listLoading = false
+      })
+    },
     courseSubmit() {
       this.$message({
         message: '提交成功',
@@ -299,9 +279,6 @@ export default {
     font-weight: normal;
   }
 
-}
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
 }
 .el-dropdown-menu__item {
   padding: 0 20px;

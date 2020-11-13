@@ -15,11 +15,11 @@ import router from './router'
 
 import '@/icons' // icon
 import '@/permission' // permission control
-import echarts from 'echarts' // echarts
+import echarts from 'echarts/lib/echarts'
+// 引入提示框和图例组件
+import 'echarts/lib/component/tooltip'
+import 'echarts/lib/component/legend'
 Vue.prototype.$echarts = echarts
-
-import myCharts from './assets/js/myCharts.js'
-Vue.use(myCharts)
 
 import './assets/iconfont/iconfont.css'
 
@@ -35,10 +35,10 @@ import 'vue-video-player/src/custom-theme.css'
  * Currently MockJs will be used in the production environment,
  * please remove it before going online ! ! !
  */
-if (process.env.NODE_ENV === 'production') {
-  const { mockXHR } = require('../mock')
-  mockXHR()
-}
+// if (process.env.NODE_ENV === 'production') {
+//   const { mockXHR } = require('../mock')
+//   mockXHR()
+// }
 
 // set ElementUI lang to EN
 // Vue.use(ElementUI, { locale })

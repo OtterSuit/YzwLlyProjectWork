@@ -1,62 +1,32 @@
 <template>
   <div class="apply-contaniner">
     <myfilters
-      title="退货申请单"
-      content="NO.0033124"
+      title="退回申请单"
       :back-button="true"
       style="margin-bottom:20px"
     />
     <div class="box">
-      <el-row style="margin-bottom:16px">
-        <span class="title">单类别</span>
-      </el-row>
-      <el-row>
-        <el-col :span="13">
-          <el-form ref="form" :model="form" label-width="70px">
-            <el-form-item label="申请类别">
-              <el-select v-model="form.type" placeholder="请选择">
-                <el-option
-                  v-for="item in typeOptions"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-form>
-        </el-col>
-      </el-row>
-    </div>
-    <div class="box">
       <el-row style="margin-bottom:6px">
         <myfilters
           ref="applyFilters"
-          title="退货清单"
-          add-icon="el-icon-circle-plus-outline"
-          addifo="添加"
-          placeholder="器械包名称/编号"
+          title="退回清单"
+          placeholder="请输入或扫描包编码"
           :search-content="true"
-          :add-button="true"
-          @addClick="addClick"
+          content-type="tel"
+          @contentBlur="contentBlur"
+          @contentInput="checkInput"
         >
-          <template slot="extent">
+          <!-- <template slot="extent">
             <el-col :span="4">
               <el-input v-model="number" placeholder="数量" />
             </el-col>
-          </template>
+          </template> -->
         </myfilters>
       </el-row>
-      <el-table :data="applyData" style="width: 100%">
+      <el-table v-loading="listLoading" :data="applyData" style="width: 100%">
         <el-table-column label="序号" type="index" width="100" />
-        <el-table-column prop="packageNum" label="编号" />
-        <el-table-column prop="packageName" label="名称" />
-        <el-table-column label="数量">
-          <template slot-scope="scope">
-            <div>
-              <el-input v-model="scope.row.number" placeholder="请输入" />
-            </div>
-          </template>
-        </el-table-column>
+        <el-table-column prop="packet_id" label="编号" />
+        <el-table-column prop="packetName" label="名称" />
         <el-table-column align="right">
           <template slot-scope="scope">
             <i class="el-icon-delete base-color delete-icon" @click="handleDelete(scope.$index,scope.row)" />
@@ -64,7 +34,7 @@
         </el-table-column>
       </el-table>
     </div>
-    <el-button type="primary" style="height:50px;width:140px" @click="onSubmit">
+    <el-button :loading="buttonLoading" type="primary" style="height:50px;width:140px" @click="onSubmit">
       提交申请
     </el-button>
   </div>
@@ -72,87 +42,161 @@
 
 <script>
 import myfilters from '@/components/myfilters'
-
+import api from '@/api'
 export default {
   components: {
     myfilters
   },
   data() {
     return {
-      typeOptions: [
-        {
-          value: '器械包申请',
-          label: '器械包申请'
-        },
-        {
-          value: '一次性物品申领',
-          label: '一次性物品申领'
-        },
-        {
-          value: '器械包换物申请',
-          label: '器械包换物申请'
-        },
-        {
-          value: '消毒物品申请',
-          label: '消毒物品申请'
-        },
-        {
-          value: '外来器械包申请',
-          label: '外来器械包申请'
-        },
-        {
-          value: '自定义器械包申请',
-          label: '自定义器械包申请'
-        }
-      ],
-      applyData: [],
-      number: '',
-      form: {}
+      buttonLoading: false,
+      listLoading: true,
+      applyData: []
     }
   },
+  created() {
+    this.fetchData()
+    this.$nextTick((x) => {
+      this.$refs.applyFilters.$refs.contentinput.focus()
+    })
+  },
   methods: {
-    onSubmit() {
-      this.$message({
-        message: '提交申请成功',
-        type: 'success'
+    fetchData() {
+      this.listLoading = true
+      api.peoCarPage({ busiType: '3' }).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.applyData = response.data.records
+          this.listLoading = false
+        }
       })
+    },
+    onSubmit() {
+      if (this.applyData.length === 0) {
+        this.$message({
+          message: '提交申请为空',
+          type: 'warning'
+        })
+        return
+      } else {
+        const shopCarIds = []
+        this.applyData.forEach((item) => {
+          shopCarIds.push(item.id)
+        })
+        this.buttonLoading = true
+        api.toApplyReturn({ shopCarIds }).then(response => {
+          console.log(response)
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.buttonLoading = false
+            this.$message({
+              message: '提交申请成功',
+              type: 'success'
+            })
+          }
+        })
+      }
+      this.applyData = []
       this.$router.back(-1)
+    },
+    checkInput(content) {
+      if (content.length >= 15) {
+        this.addClick()
+      }
     },
     addClick() {
       const name = this.$refs.applyFilters.select.content
       if (name === '') {
         this.$message({
-          message: '请输入器械包名称或编号',
+          message: '请输入或扫描包编码',
           type: 'warning'
         })
+        this.$refs.applyFilters.$refs.contentinput.focus()
         return
       }
-      if (this.number === '') {
+      /* if (this.applyCount === '') {
         this.$message({
           message: '请输入数量',
           type: 'warning'
         })
         return
+      } */
+      const applyForm = {
+        applyCount: '1',
+        busiType: '3',
+        packetId: name
       }
-      const applyObj = {
-        packageNum: name,
-        packageName: name,
-        number: this.number
-      }
-      this.applyData.push(applyObj)
-      this.$message({
-        message: '添加成功',
-        type: 'success'
+      const isExisted = this.applyData.some(item => {
+        if (item.packet_id === applyForm.packetId) {
+          /* item.apply_count += parseInt(applyForm.applyCount) */
+          return true
+        } else {
+          return false
+        }
       })
-      this.number = ''
+      if (isExisted) {
+        this.$message({
+          message: '该包已申请',
+          type: 'error'
+        })
+        this.$refs.applyFilters.select.content = ''
+        return
+      }
+      api.getInstanceById({ id: name }).then(response => {
+        console.log(response)
+        if (response.data.status !== '3') {
+          this.$message({
+            message: '该包不可退回',
+            type: 'error'
+          })
+          return
+        }
+        api.carAddstaff(applyForm).then(response => {
+          // console.log(applyForm)
+          console.log(response)
+          if (response.code === '200' && response.data.busiCode === '1') {
+          /* const isExisted = this.applyData.some(item => {
+            if (item.packet_id === applyForm.packetId) {
+              item.apply_count += parseInt(applyForm.applyCount)
+              return true
+            } else {
+              return false
+            }
+          }) */
+            this.applyData.unshift({
+              id: response.data.id,
+              packetName: response.data.packetName,
+              packet_id: response.data.packetId
+            })
+            this.$message({
+              message: '添加成功',
+              type: 'success'
+            })
+          } else {
+            this.$message({
+              message: response.data.msg,
+              type: 'warning'
+            })
+          }
+        })
+      })
+      /* this.applyCount = '' */
       this.$refs.applyFilters.select.content = ''
+      this.$refs.applyFilters.$refs.contentinput.focus()
     },
     handleDelete(index, row) {
-      this.applyData.splice(index, 1)
-      this.$message({
-        message: '删除成功',
-        type: 'success'
+      api.carDeletestaff(row).then(response => {
+        console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.applyData.splice(index, 1)
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
+        }
       })
+    },
+    contentBlur() {
+      this.$refs.applyFilters.$refs.contentinput.focus()
     }
   }
 }

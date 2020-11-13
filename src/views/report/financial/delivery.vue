@@ -31,7 +31,7 @@ export default {
   },
   data() {
     return {
-      title: '发货物品统计月报',
+      title: '发放物品统计月报',
       tableData: [
         {
           detail: '项目明细',

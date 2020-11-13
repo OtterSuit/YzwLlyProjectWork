@@ -1,19 +1,19 @@
 <template>
   <div class="apply-contaniner">
     <myfilters
-      title="发货"
+      title="发放"
       content="NO.0033124"
       :back-button="true"
       style="margin-bottom:20px"
     />
-    <el-form ref="form" :model="form" label-width="70px">
+    <el-form ref="form" :model="form" label-width="100px">
       <div class="box">
         <el-row style="margin-bottom:16px">
           <span class="title">订单信息</span>
         </el-row>
         <el-row class="row">
           <el-col :span="6">
-            <span class="label">发货科室</span>
+            <span class="label">发放科室</span>
             <span class="content">{{ data.deliveryDepartment }}</span>
           </el-col>
           <el-col :span="6">
@@ -56,18 +56,18 @@
       </div>
       <div class="box">
         <el-row style="margin-bottom:16px">
-          <span class="title">收货信息</span>
+          <span class="title">签收信息</span>
         </el-row>
         <el-row>
           <el-col :span="13">
-            <el-form-item label="送货人">
+            <el-form-item label="下送人">
               <el-input v-model="form.deliveryman" placeholder="请输入或扫描工牌" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row>
           <el-col :span="13">
-            <el-form-item label="收货人">
+            <el-form-item label="签收人">
               <el-input v-model="form.consignee" placeholder="请输入或扫描工牌" />
             </el-form-item>
           </el-col>
@@ -124,7 +124,7 @@
             <el-table-column label="包编码" width="260px" />
             <el-table-column label="包名称" />
           </el-table>
-          <div style="width:390px; margin:15px 150px">
+          <div class="dialog-packet">
             <el-input v-model="dialogCoding" placeholder="请输入或扫描包编码" @change="codeChange" />
           </div>
           <el-scrollbar style="height:410px;background: #fff">
@@ -328,9 +328,6 @@ export default {
 }
 ::v-deep .el-scrollbar__wrap {
   overflow-x: hidden;
-}
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
 }
 ::v-deep .hidden-radio .el-radio__label {
   display: none;

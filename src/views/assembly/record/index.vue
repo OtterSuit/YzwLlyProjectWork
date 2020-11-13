@@ -1,9 +1,9 @@
 <template>
-  <div class="record-style">
+  <div class="record-contaniner">
     <!-- header -->
     <myfilters
       title="清洗质量记录表"
-      content="NO.0033124"
+      :content="content"
       :back-button="true"
     />
     <!-- header end -->
@@ -11,21 +11,22 @@
       <div class="table">
         <!-- table -->
         <el-table
+          v-loading="listLoading"
           :data="tableData"
           style="width: 100%"
         >
           <el-table-column
             label="单号"
-            prop="number"
+            prop="id"
           />
           <el-table-column
             label="检查者/时间"
           >
             <template slot-scope="scope">
               <div>
-                {{ scope.row.checker }} <br>
+                {{ scope.row.assembleUser }} <br>
                 <span class="second-row">
-                  {{ scope.row.checkTime }}
+                  {{ scope.row.assembleTime }}
                 </span>
               </div>
             </template>
@@ -36,7 +37,7 @@
           >
             <template slot-scope="scope">
               <div>
-                {{ scope.row.cleaningFrame }} <br>
+                {{ scope.row.cleanboxName }} <br>
                 <span class="second-row">
                   {{ scope.row.cleaningBox }}
                 </span>
@@ -48,9 +49,9 @@
           >
             <template slot-scope="scope">
               <div>
-                {{ scope.row.cleaner }} <br>
+                {{ scope.row.cleanUser }} <br>
                 <span class="second-row">
-                  {{ scope.row.cleaningTime }}
+                  {{ scope.row.cleanTime }}
                 </span>
               </div>
             </template>
@@ -60,9 +61,9 @@
           >
             <template slot-scope="scope">
               <div>
-                {{ scope.row.cleaningEquipment }} <br>
+                {{ scope.row.cleanEquipmentName }} <br>
                 <span class="second-row">
-                  {{ scope.row.cleaningProgram }}
+                  {{ scope.row.cleanProgramName }}
                 </span>
               </div>
             </template>
@@ -71,28 +72,40 @@
         <!-- table end -->
       </div>
       <!-- 循环所有的清洗类型 -->
-      <div v-for="item in recordData" :key="item.type" class="table">
+      <div v-for="item in recordData" :key="item.groupId" v-loading="listLoading" class="table">
         <!-- 清洗类型表格 -->
         <table>
           <tr>
             <!-- 清洗类型 -->
-            <th rowspan="3" class="left-thead">{{ item.type }}</th>
+            <th rowspan="3" class="left-thead">{{ item.groupName }}</th>
             <!-- 循环所有的清洗部位 -->
-            <td v-for="element in item.position" :key="element.positionName">
+            <td v-for="element in item.items" :key="element.code">
               <table class="table-border">
                 <tr>
-                  <td class="top-thead" :colspan="element.dirt.length">{{ element.positionName }}</td>
+                  <td class="top-thead" :colspan="2+element.isShowAttach">{{ element.name }}</td>
                 </tr>
                 <tr>
                   <!-- 循环所有的清洗污渍 -->
-                  <td v-for="children in element.dirt" :key="children.dirtName">
+                  <!-- <td v-for="children in element.dirt" :key="children.dirtName">
                     {{ children.dirtName }}
-                  </td>
+                  </td> -->
+                  <td>污渍</td>
+                  <td>锈渍</td>
+                  <td v-if="element.isShowAttach===1">附着物</td>
                 </tr>
                 <tr class="width-10">
                   <!-- 循环所有的清洗污渍个数 -->
-                  <td v-for="children in element.dirt" :key="children.dirtName">
+                  <!--  <td v-for="children in element.dirt" :key="children.dirtName">
                     {{ children.Num }}
+                  </td> -->
+                  <td>
+                    {{ element.stainCount }}
+                  </td>
+                  <td>
+                    {{ element.rustCount }}
+                  </td>
+                  <td v-if="element.isShowAttach===1">
+                    {{ element.attachCount }}
                   </td>
                 </tr>
               </table>
@@ -105,7 +118,7 @@
                 </tr>
                 <tr>
                   <td rowspan="2">
-                    {{ item.total }}
+                    {{ totalCount(item.items) }}
                   </td>
                 </tr>
                 <tr />
@@ -120,6 +133,7 @@
 
 <script>
 import myfilters from '@/components/myfilters'
+import api from '@/api'
 
 export default {
   components: {
@@ -128,246 +142,39 @@ export default {
   data() {
     return {
       // 表格数据
-      tableData: [{
-        number: '0033124',
-        checker: ' 赵美丽',
-        checkTime: '2020.08.10 09.45.12',
-        cleaningBox: 'MJJ001',
-        cleaningFrame: '架01',
-        cleaner: ' 赵美丽',
-        cleaningTime: '2020.08.10 09.45.12',
-        cleaningEquipment: '清洗机01',
-        cleaningProgram: '清洗程序112'
-      }],
+      tableData: [],
       // 记录数据
-      recordData: [
-        {
-          type: '管腔类',
-          total: 8,
-          position: [
-            {
-              positionName: '盲端开口',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 2
-                },
-                {
-                  dirtName: '附着物',
-                  Num: 1
-                }
-              ]
-            },
-            {
-              positionName: '管腔内',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 2
-                },
-                {
-                  dirtName: '附着物',
-                  Num: 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          type: '窥类',
-          total: 8,
-          position: [
-            {
-              positionName: '螺钉',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 2
-                }
-              ]
-            },
-            {
-              positionName: '嘴部',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 1
-                }
-              ]
-            },
-            {
-              positionName: '凹位',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 2
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          type: '刮匙',
-          total: 5,
-          position: [
-            {
-              positionName: '匙圈',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 2
-                }
-              ]
-            },
-            {
-              positionName: '表面',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          type: '剪刀',
-          total: 5,
-          position: [
-            {
-              positionName: '轴节',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 2
-                }
-              ]
-            },
-            {
-              positionName: '刃面',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          type: '钳类',
-          total: 5,
-          position: [
-            {
-              positionName: '轴节',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 2
-                }
-              ]
-            },
-            {
-              positionName: '齿槽',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 1
-                }
-              ]
-            }
-          ]
-        },
-        {
-          type: '镊子',
-          total: 8,
-          position: [
-            {
-              positionName: '齿槽',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 2
-                }
-              ]
-            },
-            {
-              positionName: '缝隙',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 1
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 1
-                }
-              ]
-            },
-            {
-              positionName: '表面',
-              dirt: [
-                {
-                  dirtName: '污渍',
-                  Num: 2
-                },
-                {
-                  dirtName: '锈渍',
-                  Num: 1
-                }
-              ]
-            }
-          ]
+      recordData: [],
+      listLoading: true
+    }
+  },
+  computed: {
+    content() {
+      return this.$route.query.id
+    }
+  },
+  created() {
+    this.fetchData()
+  },
+  methods: {
+    fetchData() {
+      this.listLoading = true
+      api.getAssembleQtInfosPage({ id: this.$route.query.id }).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.records
+          this.recordData = JSON.parse(this.tableData[0].recordJson)
+          // console.log(this.recordData)
+          this.listLoading = false
         }
-      ]
+      })
+    },
+    totalCount(items) {
+      let totalCount = 0
+      items.forEach(element => {
+        totalCount += (element.attachCount + element.rustCount + element.stainCount)
+      })
+      return totalCount
     }
   }
 }
@@ -409,9 +216,10 @@ th,td{
 .top-thead{
   background: #F6F6F6;
 }
-.record-style{
+.record-contaniner{
   background-color:#F0F2F5;
   padding: 30px;
+  min-height: calc(100vh - 50px);
 }
 .white-box{
   background: #FFFFFF;

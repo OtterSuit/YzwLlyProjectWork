@@ -8,6 +8,7 @@
 </template>
 
 <script>
+import 'echarts/lib/chart/pie'
 import resize from './mixins/resize'
 export default {
   mixins: [resize],

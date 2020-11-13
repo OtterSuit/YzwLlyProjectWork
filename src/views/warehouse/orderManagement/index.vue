@@ -5,24 +5,26 @@
       <myfilters
         title="订单管理"
         :content="content"
-        :choose-states="true"
         :choose-status="true"
+        :choose-type="true"
         :search-content="true"
         :choose-date="true"
         :choose-department="true"
         placeholder="申请人/订单编号"
-        :states-options="statesOptions"
+        date-placeholder="申请时间"
         :status-options="statusOptions"
+        :type-options="ssd_packet_category"
         :options="departmentOptions"
-        @statesChange="statesChange"
-        @departmentChange="departmentChange"
         @statusChange="statusChange"
+        @departmentChange="departmentChange"
+        @typeChange="typeChange"
         @contentChange="contentChange"
         @dateChange="dateChange"
       />
       <!-- header end -->
       <!-- table -->
       <el-table
+        v-loading="listLoading"
         :data="tableData"
         style="width: 100%"
       >
@@ -31,23 +33,30 @@
           type="index"
           width="100px"
         />
-        <el-table-column label="订单编号" prop="orderCoding" />
-        <el-table-column label="申请类别" prop="applicationType" width="250px" />
-        <el-table-column label="申请科室" prop="applicationDepartment" />
-        <el-table-column label="申请人" prop="applicant" />
-        <el-table-column label="申请时间" prop="applicationTime" width="220px" />
+        <el-table-column label="订单编号" prop="id" width="200px" />
+        <el-table-column label="申请类别">
+          <template slot-scope="scope">
+            <div>
+              {{ ssd_packet_category[scope.row.workorderCategory] }}
+              <span v-if="scope.row.urgentFlag===1" class="error-color">【加急】</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="申请科室" prop="applyDeptName" />
+        <el-table-column label="申请人" prop="applyUserid" />
+        <el-table-column label="申请时间" prop="applyTime" width="220px" />
         <el-table-column
           width="150px"
           label="状态"
         >
           <template slot-scope="scope">
-            <div :class="stateColor(scope.row.state)">
-              <i :class="stateIcon(scope.row.state)" />
-              {{ state(scope.row.state) }}
+            <div :class="stateColor(scope.row.currentStatus)">
+              <i :class="stateIcon(scope.row.currentStatus)" />
+              {{ ssd_workorder_status[scope.row.currentStatus] }}
             </div>
           </template>
         </el-table-column>
-        <el-table-column width="150">
+        <el-table-column align="right">
           <template slot-scope="scope">
             <!-- 下拉框 -->
             <el-dropdown trigger="click" class="dropdown" @command="handleCommand">
@@ -67,16 +76,16 @@
                     action: 'detailShow'
                   }"
                 >查看详细</el-dropdown-item>
-                <el-dropdown-item
-                  :disabled="scope.row.state!=='1'"
+                <!-- <el-dropdown-item
+                  :disabled="scope.row.currentStatus!=='1'"
                   :command="{
                     index: scope.$index,
                     row: scope.row,
                     action: 'handleAgree'
                   }"
-                >同意</el-dropdown-item>
+                >同意</el-dropdown-item> -->
                 <el-dropdown-item
-                  :disabled="scope.row.state!=='1'"
+                  :disabled="scope.row.currentStatus!=='1'"
                   :command="{
                     index: scope.$index,
                     row: scope.row,
@@ -84,19 +93,20 @@
                   }"
                 >不同意</el-dropdown-item>
                 <el-dropdown-item
-                  :disabled="scope.row.state!=='5'"
+                  :disabled="scope.row.currentStatus!=='1'"
                   :command="{
                     index: scope.$index,
                     row: scope.row,
                     action: 'handleDelivery'
                   }"
-                >发货</el-dropdown-item>
+                >发放</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
             <!-- 下拉框结束 -->
           </template>
         </el-table-column>
       </el-table>
+      <my-pagination :total="totalCount" methods="toShowPage" :conditions="conditions" />
       <!-- table end -->
       <!-- 驳回弹出框 -->
       <el-dialog v-el-drag-dialog title="驳回申请" :visible.sync="disagreeShow" width="600px">
@@ -110,14 +120,14 @@
                 </el-col>
                 <el-col :span="22">
                   <div class="disagree-title">
-                    您确定要驳回订单【{{ disagree.orderCoding }}】吗？
+                    您确定要驳回订单【{{ disagree.id }}】吗？
                   </div>
                   <div class="tiny-form-item">
                     <el-form-item label="订单编码">
-                      {{ disagree.orderCoding }}
+                      {{ disagree.id }}
                     </el-form-item>
-                    <el-form-item label="订单类型">
-                      器械包申主表
+                    <el-form-item label="申请类别">
+                      {{ disagree.category }}
                     </el-form-item>
                   </div>
                 </el-col>
@@ -147,7 +157,7 @@
         </div>
         <div slot="footer" class="dialog-footer">
           <el-button type="bgc" @click="disagreeShow=false">取消</el-button>
-          <el-button type="danger" @click="disagreeSubmit">确定驳回</el-button>
+          <el-button type="danger" :loading="buttonLoading" @click="disagreeSubmit">确定驳回</el-button>
         </div>
       </el-dialog>
     </div>
@@ -156,119 +166,24 @@
 
 <script>
 import myfilters from '@/components/myfilters'
+import myPagination from '@/components/MyPagination'
+import api from '@/api'
 
 export default {
   components: {
-    myfilters
+    myfilters, myPagination
   },
   data() {
     return {
+      buttonLoading: false,
+      listLoading: true,
+      ssd_workorder_status: null,
+      ssd_packet_category: null, // 包类型
       disagreeShow: false, // 驳回弹出框
-      row: [],
       // table data
-      tableData: [
-        {
-          orderCoding: '10001',
-          applicationType: '器械包申请',
-          applicationDepartment: '妇一科',
-          applicant: '张美华',
-          applicationTime: '2020.08.10 09:54:12',
-          state: '3'
-        },
-        {
-          orderCoding: '10001',
-          applicationType: '一次性物品申领',
-          applicationDepartment: '儿保科',
-          applicant: '陈春兰',
-          applicationTime: '2020.08.10 09:54:12',
-          state: '1'
-        },
-        {
-          orderCoding: '10001',
-          applicationType: '器械包换物申请',
-          applicationDepartment: '妇保科',
-          applicant: '李刚',
-          applicationTime: '2020.08.10 09:54:12',
-          state: '1'
-        },
-        {
-          orderCoding: '10001',
-          applicationType: '消毒物品申请',
-          applicationDepartment: '宫颈科',
-          applicant: '刘玉玲',
-          applicationTime: '2020.08.10 09:54:12',
-          state: '2'
-        },
-        {
-          orderCoding: '10001',
-          applicationType: '外来器械包申请',
-          applicationDepartment: '手术室',
-          applicant: '李顺庭',
-          applicationTime: '2020.08.10 09:54:12',
-          state: '4'
-        },
-        {
-          orderCoding: '10001',
-          applicationType: '自定义器械包申请',
-          applicationDepartment: '手术室',
-          applicant: '李顺庭',
-          applicationTime: '2020.08.10 09:54:12',
-          state: '5'
-        }
-      ],
+      tableData: [],
       disagree: {},
-      statesOptions: [
-        {
-          value: '全部状态',
-          label: '全部状态'
-        },
-        {
-          value: '未审核',
-          label: '未审核'
-        },
-        {
-          value: '已驳回',
-          label: '已驳回'
-        },
-        {
-          value: '已审核，待配包',
-          label: '已审核，待配包'
-        },
-        {
-          value: '已配包，待发货',
-          label: '已配包，待发货'
-        }
-      ],
-      statusOptions: [
-        {
-          value: '全部类别',
-          label: '全部类别'
-        },
-        {
-          value: '器械包申请',
-          label: '器械包申请'
-        },
-        {
-          value: '一次性物品申领',
-          label: '一次性物品申领'
-        },
-        {
-          value: '器械包换物申请',
-          label: '器械包换物申请'
-        },
-        {
-          value: '消毒物品申请',
-          label: '消毒物品申请'
-        },
-        {
-          value: '外来器械包申请',
-          label: '外来器械包申请'
-        },
-        {
-          value: '自定义器械包申请',
-          label: '自定义器械包申请'
-        }
-      ],
+      totalCount: 0,
       departmentOptions: [
         {
           value: '全部科室',
@@ -294,35 +209,57 @@ export default {
           value: '手术室',
           label: '手术室'
         }
-      ]
+      ],
+      conditions: {
+        workorderType: '1',
+        workorderCategory: null,
+        currentStatus: '',
+        keyword: null,
+        applyTimeOneDay: null,
+        applyDeptName: null
+      },
+      statusOptions: {
+        1: '申请',
+        10: '已取消',
+        2: '发放中',
+        3: '已验收',
+        9: '已驳回'
+      }
     }
   },
   computed: {
     // table data length
     content() {
-      return '共' + this.tableData.length + '条数据'
+      return '共' + this.totalCount + '条数据'
     }
   },
+  created() {
+    this.fetchData() // 获取数据
+  },
   methods: {
-    // 状态标签文字
-    state(state) {
-      const stateMap = {
-        '1': '未审核',
-        '2': '已驳回',
-        '3': '已完成',
-        '4': '已审核,待配包',
-        '5': '已配包,待发货'
-      }
-      return stateMap[state]
+    // 初始化表单数据
+    fetchData() {
+      this.listLoading = true
+      // 分页查询工单(请求工单)
+      api.toShowPage(this.conditions).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.ssd_workorder_status = response.data.dictData.ssd_workorder_status // 工单状态字典
+          this.ssd_packet_category = response.data.dictData.ssd_packet_category // 获取包类型
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.listLoading = false
+        }
+      })
     },
     // 状态标签图标
     stateIcon(state) {
       const stateMap = {
         '1': 'el-icon-time',
-        '2': 'el-icon-warning',
+        '2': 'el-icon-time',
         '3': 'el-icon-success',
-        '4': 'el-icon-time',
-        '5': 'el-icon-time'
+        '9': 'el-icon-warning',
+        '10': 'el-icon-warning'
       }
       return stateMap[state]
     },
@@ -330,10 +267,10 @@ export default {
     stateColor(state) {
       const stateMap = {
         '1': 'base-color',
-        '2': 'error-color',
+        '2': 'goon-color',
         '3': 'success-color',
-        '4': 'normal-color',
-        '5': 'normal-color'
+        '9': 'error-color',
+        '10': 'base-color'
       }
       return stateMap[state]
     },
@@ -341,55 +278,96 @@ export default {
     handleCommand({ index, row, action }) {
       this[action](index, row)
     },
-    // 控制同意
-    handleAgree(index, row) {
-      row.state = '5'
-      this.$message({
-        message: '已审核',
-        type: 'success'
-      })
-    },
     // 控制不同意
     handleDisagree(index, row) {
       this.row = row
+      this.buttonLoading = false
       this.disagreeShow = true
+      // 驳回数据
       this.disagree = {
-        orderCoding: row.orderCoding,
+        id: row.id,
         resultRadio: '1',
-        resultText: ''
+        resultText: '',
+        category: this.ssd_packet_category[row.category]
       }
     },
-    // 控制发货
+    // 驳回请求数据类型
+    radioResult(label) {
+      const labelMap = {
+        '1': '仓库缺货',
+        '2': '提交错误',
+        '3': this.disagree.resultText
+      }
+      return labelMap[label]
+    },
+    // 控制发放
     handleDelivery(index, row) {
-      this.$router.push('/warehouse/orderManagement/delivery')
+      this.$router.push({
+        name: 'Delivery',
+        query: {
+          id: row.id
+        }
+      })
     },
     // 控制查看详细
     detailShow(index, row) {
-      this.$router.push('/warehouse/orderManagement/orderDetail')
+      this.$router.push({
+        name: 'OrderDetail',
+        query: {
+          id: row.id
+        }
+      })
     },
     // 不同意提交
     disagreeSubmit() {
-      this.disagreeShow = false
-      this.row.state = '2'
-      this.$message({
-        message: '已驳回',
-        type: 'success'
+      // 驳回表单
+      const disagreeForm = {
+        id: this.disagree.id,
+        remark: this.radioResult(this.disagree.resultRadio)
+      }
+      // 驳回请求
+      this.buttonLoading = true
+      api.toRejectApply(disagreeForm).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.disagreeShow = false
+          this.row.currentStatus = '9'
+          this.$message({
+            message: '已驳回',
+            type: 'success'
+          })
+        }
       })
     },
-    statesChange(state) {
-      console.log(state)
+    statusChange(state) {
+      this.$set(this.conditions, 'currentStatus', state)
+      this.selectChange()
     },
     departmentChange(department) {
-      console.log(department)
+      this.$set(this.conditions, 'applyDeptName', department)
+      this.selectChange()
     },
-    statusChange(status) {
-      console.log(status)
+    typeChange(status) {
+      this.$set(this.conditions, 'workorderCategory', status)
+      this.selectChange()
     },
     contentChange(content) {
-      console.log(content)
+      this.$set(this.conditions, 'keyword', content)
+      this.selectChange()
     },
     dateChange(date) {
-      console.log(date)
+      this.$set(this.conditions, 'applyTimeOneDay', date)
+      this.selectChange()
+    },
+    selectChange() {
+      this.$set(this.conditions, 'pageNo', 1)
+      this.listLoading = true
+      api.toShowPage(this.conditions).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.listLoading = false
+        }
+      })
     }
   }
 }

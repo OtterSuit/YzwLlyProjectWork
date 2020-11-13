@@ -5,44 +5,44 @@
     <breadcrumb class="breadcrumb-container" />
     <div class="right-menu">
       <i class="el-icon-refresh-right icon" style="cursor:pointer" @click="refresh()" />
-      <router-link to="/systemSettings/myTodo">
+      <!-- <router-link v-if="router_permission.MyTodo" to="/systemSettings/myTodo">
         <el-badge :value="value" :max="99" class="item">
           <i class="iconfont icon-lingdang icon" />
         </el-badge>
-      </router-link>
+      </router-link> -->
       <el-dropdown class="avatar-container" trigger="click">
         <div class="avatar-wrapper">
-          <img class="pic_user" src="@/assets/images/meili.png" alt="user">
+          <img v-if="!avatar||avatar===''||avatar==='undefined'||avatar==='null'" src="@/assets/images/noimg-01.jpg" class="pic_user">
+          <img v-else :src="imgSrc(avatar)" class="pic_user">
           <span class="user"> {{ name }}</span>
           <i class="el-icon-arrow-down down" />
         </div>
         <el-dropdown-menu slot="dropdown" class="user-dropdown">
-          <router-link to="/">
+          <router-link :to="'/'+home">
             <el-dropdown-item>
               首页
             </el-dropdown-item>
           </router-link>
-          <router-link to="/systemSettings/myInfo">
+          <router-link v-if="router_permission.MyInfo" to="/systemSettings/myInfo">
             <el-dropdown-item>
               我的信息
             </el-dropdown-item>
           </router-link>
-          <router-link to="/systemSettings/purview">
+          <router-link v-if="router_permission.Password" to="/systemSettings/password">
+            <el-dropdown-item>
+              修改密码
+            </el-dropdown-item>
+          </router-link>
+          <router-link v-if="router_permission.Purview" to="/systemSettings/purview">
             <el-dropdown-item>
               权限管理
             </el-dropdown-item>
           </router-link>
-          <router-link to="/systemSettings/register">
+          <router-link v-if="router_permission.systemSettingsRegister" to="/systemSettings/register">
             <el-dropdown-item>
               账号设置
             </el-dropdown-item>
           </router-link>
-          <!-- <a target="_blank" href="https://github.com/PanJiaChen/vue-admin-template/">
-            <el-dropdown-item>Github</el-dropdown-item>
-          </a>
-          <a target="_blank" href="https://panjiachen.github.io/vue-element-admin-site/#/">
-            <el-dropdown-item>Docs</el-dropdown-item>
-          </a> -->
           <el-dropdown-item divided @click.native="logout">
             <span style="display:block;">退出登录</span>
           </el-dropdown-item>
@@ -53,16 +53,17 @@
 </template>
 
 <script>
+import APIconfig from '@/api/APIconfig'
 import { mapGetters } from 'vuex'
 import Breadcrumb from '@/components/Breadcrumb'
 import Hamburger from '@/components/Hamburger'
-// import { getTodo } from '@/api/systemSettings/todo'
 
 export default {
   components: {
     Breadcrumb,
     Hamburger
   },
+  inject: ['reload'],
   data() {
     return {
       value: ''
@@ -72,7 +73,9 @@ export default {
     ...mapGetters([
       'name',
       'sidebar',
-      'avatar'
+      'avatar',
+      'router_permission',
+      'home'
     ])
   },
   created() {
@@ -85,15 +88,19 @@ export default {
     //     this.value = response.data.total
     //   })
     // },
+    imgSrc(imageInfo) {
+      return `${APIconfig.baseUrl}/${imageInfo}`
+    },
     refresh() {
-      this.$router.go(0)
+      this.reload()
+      // this.$router.go(0)
     },
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
     },
     async logout() {
       await this.$store.dispatch('user/logout')
-      this.$router.push(`/login?redirect=${this.$route.fullPath}`)
+      this.$router.push(`/login`)
     }
   }
 }
@@ -125,12 +132,15 @@ export default {
     line-height: 50px;
   }
   .pic_user{
-    vertical-align: middle;
+    position: relative;
+    top: 5px;
+    // vertical-align: middle;
     width: 30px;
     border-radius: 100%;
     height: 30px;
   }
   .right-menu {
+    padding: 5px 0;
     float: right;
     height: 100%;
     // line-height: 50px;
@@ -171,8 +181,10 @@ export default {
         padding: 0 10px;
         border-radius: 20px;
         background-color: #F0F2F5;
-        margin-top: 5px;
+        // margin-top: 5px;
         .user{
+          position: relative;
+          top: -5px;
           line-height: 40px;
           display: inline-block;
           color: #666;
@@ -180,6 +192,10 @@ export default {
           // right: -40px;
           // bottom: -13px;
           // width: 100px;
+        }
+        ::v-deep .el-icon-arrow-down {
+          position: relative;
+          top: -5px;
         }
         .down {
           margin-left: 5px;
@@ -208,8 +224,8 @@ export default {
   margin-right: 15px;
   color: #999;
 }
-.el-icon-refresh-right {
-  vertical-align: middle;
+::v-deep .el-badge {
+  vertical-align: baseline;
 }
 .el-dropdown-menu {
   padding: 0;

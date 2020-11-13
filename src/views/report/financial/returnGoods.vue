@@ -31,7 +31,7 @@ export default {
   },
   data() {
     return {
-      title: '退货统计',
+      title: '退回统计',
       tableData: [
         {
           detail: '项目明细',

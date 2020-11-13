@@ -4,45 +4,47 @@
     <myfilters
       title="包信息维护"
       :add-button="true"
-      addifo="新增"
       :search-content="true"
-      placeholder="物品编码"
-      add-icon="el-icon-circle-plus-outline"
+      placeholder="包名称/编号"
       @addClick="addClick"
+      @contentChange="contentChange"
     />
     <!-- 头部end -->
     <!-- table -->
-    <el-table :data="tableData" style="width: 100%">
+    <el-table v-loading="listLoading" :data="tableData" style="width: 100%">
       <!-- 详细 -->
       <el-table-column type="expand">
         <template slot-scope="props">
           <el-form label-position="left" inline class="demo-table-expand">
             <el-form-item label="拼音码">
-              <span>{{ props.row.pinyinWriting }}</span>
+              <span>{{ props.row.spellCode }}</span>
             </el-form-item>
             <el-form-item label="五笔码">
-              <span>{{ props.row.wubingWriting }}</span>
+              <span>{{ props.row.strokeCode }}</span>
             </el-form-item>
             <el-form-item label="自定义码">
               <span>{{ props.row.customCode }}</span>
             </el-form-item>
             <el-form-item label="规格">
-              <span>{{ props.row.specifications }}</span>
-            </el-form-item>
-            <el-form-item label="单价">
-              <span>{{ props.row.price }}</span>
+              <span>{{ ssd_specification[props.row.spec] }}</span>
             </el-form-item>
             <el-form-item label="计量单位">
-              <span>{{ props.row.unit }}</span>
+              <span>{{ ssd_measure_unit[props.row.measureUnit] }}</span>
             </el-form-item>
-            <el-form-item label="是否打包">
-              <span>{{ props.row.ifPackaging }}</span>
+            <el-form-item label="包装材料">
+              <span>{{ props.row.packMaterial }}</span>
             </el-form-item>
-            <el-form-item label="是否清洗">
-              <span>{{ props.row.ifCleaning }}</span>
+            <el-form-item label="附加费用">
+              <span>{{ props.row.surcharge }}</span>
             </el-form-item>
-            <el-form-item label="是否灭菌">
-              <span>{{ props.row.ifSterilization }}</span>
+            <el-form-item label="清洗程序">
+              <span>{{ CLEAN_PROGRAM[props.row.cleanPro] }}</span>
+            </el-form-item>
+            <el-form-item label="灭菌程序">
+              <span>{{ STERILIZE_PROGRAM[props.row.sterilizePro] }}</span>
+            </el-form-item>
+            <el-form-item label="灭菌方法">
+              <span>{{ STERILIZE_METHOD[props.row.sterilizeMethod] }}</span>
             </el-form-item>
           </el-form>
         </template>
@@ -51,49 +53,53 @@
       <el-table-column label="缩略图" align="center">
         <template slot-scope="scope">
           <img
+            v-if="scope.row.images"
             style="width: 70px;cursor:pointer"
-            :src="scope.row.url"
-            @click="handleImg(scope.row.srcList)"
+            :src="imgSrc(scope.row.images[0].url)"
+            @click="imgClick(scope.$index,scope.row)"
           >
         </template>
       </el-table-column>
-      <el-table-column label="包名称" prop="package" />
-      <el-table-column label="所属类别" prop="type" />
-      <el-table-column label="包装材料" prop="materials" />
-      <el-table-column label="有效天数" prop="effectiveDays" />
-      <el-table-column label="标签大小" prop="labelSize" />
-      <el-table-column label="附加费用" prop="surcharge" />
-      <el-table-column label="清洗程序" prop="cleaningSequence" />
-      <el-table-column label="灭菌程序" prop="sterilizationSequence" />
-      <el-table-column label="灭菌方法" prop="sterilizationMethod" />
-      <el-table-column label="备注" prop="instructions" width="180" />
-      <el-table-column width="220">
+      <el-table-column label="包编号" prop="serialNumber" />
+      <el-table-column label="包名称" prop="name" />
+      <el-table-column label="所属类别">
+        <template slot-scope="scope">{{ ssd_packet_category[scope.row.category] }}</template>
+      </el-table-column>
+      <el-table-column label="是否打包">
+        <template slot-scope="scope">{{ ssd_common_boolean[scope.row.packFlag] }}</template>
+      </el-table-column>
+      <el-table-column label="是否清洗">
+        <template slot-scope="scope">{{ ssd_common_boolean[scope.row.cleanFlag] }}</template>
+      </el-table-column>
+      <el-table-column label="是否灭菌">
+        <template slot-scope="scope">{{ ssd_common_boolean[scope.row.sterilizeFlag] }}</template>
+      </el-table-column>
+      <el-table-column label="有效天数" prop="validDay">
+        <template slot-scope="scope">{{ VALID_PERIOD[scope.row.validDay] }}</template>
+      </el-table-column>
+      <el-table-column label="标签大小" prop="tagSize">
+        <template slot-scope="scope">{{ BARCODE_TYPE[scope.row.tagSize] }}</template>
+      </el-table-column>
+      <el-table-column label="备注" prop="remark" width="180" />
+      <el-table-column width="240">
         <template slot-scope="scope">
-          <el-button
-            size="mini"
-            style="margin-right:5px"
-            @click="handleDetails(scope.$index, scope.row, 'pbox')"
-          >
-            <i class="el-icon-tickets" /> 查看明细
-          </el-button>
           <el-dropdown trigger="click" class="dropdown" @command="handleCommand">
             <span class="el-dropdown-link">
-              <el-button
-                size="mini"
-                icon="el-icon-s-tools"
-              >操作<i class="el-icon-arrow-down el-icon--right" />
+              <el-button size="mini" icon="el-icon-s-tools">
+                操作
+                <i class="el-icon-arrow-down el-icon--right" />
               </el-button>
             </span>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item
-                icon="el-icon-upload2"
+                icon="el-icon-tickets"
                 class="normal-color"
                 :command="{
                   index: scope.$index,
                   row: scope.row,
-                  action: 'handleUpload'
+                  action: 'handleDetails'
                 }"
-              >上传</el-dropdown-item>
+              >明细</el-dropdown-item>
               <el-dropdown-item
                 icon="el-icon-edit-outline"
                 :command="{
@@ -113,115 +119,180 @@
               >删除</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
+          <el-dropdown trigger="click" class="dropdown" @command="handleCommand">
+            <span class="el-dropdown-link">
+              <el-button size="mini" icon="el-icon-upload2">
+                上传
+                <i class="el-icon-arrow-down el-icon--right" />
+              </el-button>
+            </span>
+            <el-dropdown-menu slot="dropdown">
+              <el-dropdown-item
+                :command="{
+                  index: scope.$index,
+                  row: scope.row,
+                  action: 'handleUpload'
+                }"
+              >包图片</el-dropdown-item>
+              <el-dropdown-item
+                :command="{
+                  index: scope.$index,
+                  row: scope.row,
+                  action: 'handlePackage'
+                }"
+              >封包教程</el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
+    <my-pagination :total="totalCount" methods="topacketPage" :conditions="conditions" />
     <!-- table end -->
     <!-- 新增包弹窗 -->
     <el-dialog v-el-drag-dialog title="包信息" :visible.sync="editShow" width="800px">
       <div class="dialog-main">
         <el-scrollbar>
-          <el-form ref="form" :model="form" label-width="90px" class="scrollbar-form">
+          <el-form
+            ref="form"
+            :model="form"
+            label-width="90px"
+            class="scrollbar-form"
+            :rules="rules"
+          >
             <el-row type="flex" justify="space-between">
               <el-col :span="11">
-                <el-form-item label="包名称">
-                  <el-input v-model="form.package" />
+                <el-form-item label="包编号" prop="serialNumber">
+                  <el-input v-model="form.serialNumber" />
                 </el-form-item>
               </el-col>
               <el-col :span="11">
-                <el-form-item label="拼音码">
-                  <el-input v-model="form.pinyinWriting" />
+                <el-form-item label="包名称" prop="name">
+                  <el-input v-model="form.name" />
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row type="flex" justify="space-between">
               <el-col :span="11">
-                <el-form-item label="五笔码">
-                  <el-input v-model="form.wubingWriting" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="11">
-                <el-form-item label="自定义码">
-                  <el-input v-model="form.customCode" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row type="flex" justify="space-between">
-              <el-col :span="11">
-                <el-form-item label="规格">
-                  <el-select v-model="form.specifications" placeholder="">
+                <el-form-item label="包所属类别" prop="category">
+                  <el-select v-model="form.category" placeholder>
                     <el-option
-                      v-for="item in specifications"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
+                      v-for="(val, key) in ssd_packet_category"
+                      :key="val"
+                      :label="val"
+                      :value="key"
                     />
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="11">
-                <el-form-item label="单价">
-                  <el-input v-model="form.price" />
+                <el-form-item label="是否打包" prop="packFlag">
+                  <el-radio-group v-model="form.packFlag">
+                    <el-radio
+                      v-for="(val, key) in ssd_common_boolean"
+                      :key="val"
+                      :label="key"
+                    >{{ val }}</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row type="flex" justify="space-between">
+              <el-col :span="11">
+                <el-form-item label="是否清洗" prop="cleanFlag">
+                  <el-radio-group v-model="form.cleanFlag">
+                    <el-radio
+                      v-for="(val, key) in ssd_common_boolean"
+                      :key="val"
+                      :label="key"
+                    >{{ val }}</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+              <el-col :span="11">
+                <el-form-item label="是否灭菌" prop="sterilizeFlag">
+                  <el-radio-group v-model="form.sterilizeFlag">
+                    <el-radio
+                      v-for="(val, key) in ssd_common_boolean"
+                      :key="val"
+                      :label="key"
+                    >{{ val }}</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row type="flex" justify="space-between">
+              <el-col :span="11">
+                <el-form-item label="有效天数" prop="validDay">
+                  <el-select v-model="form.validDay" placeholder>
+                    <el-option
+                      v-for="(val, key) in VALID_PERIOD"
+                      :key="val"
+                      :label="val"
+                      :value="key"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="11">
+                <el-form-item label="标签大小" prop="tagSize">
+                  <el-select v-model="form.tagSize" placeholder>
+                    <el-option
+                      v-for="(val, key) in BARCODE_TYPE"
+                      :key="val"
+                      :label="val"
+                      :value="key"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row type="flex" justify="space-between">
+              <el-col :span="11">
+                <el-form-item label="拼音码">
+                  <el-input v-model="form.spellCode" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="11">
+                <el-form-item label="五笔码">
+                  <el-input v-model="form.strokeCode" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row type="flex" justify="space-between">
+              <el-col :span="11">
+                <el-form-item label="自定义码">
+                  <el-input v-model="form.customCode" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="11">
+                <el-form-item label="规格">
+                  <el-select v-model="form.spec" placeholder>
+                    <el-option
+                      v-for="(val, key) in ssd_specification"
+                      :key="val"
+                      :label="val"
+                      :value="key"
+                    />
+                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row type="flex" justify="space-between">
               <el-col :span="11">
                 <el-form-item label="计量单位">
-                  <el-select v-model="form.unit" placeholder="">
+                  <el-select v-model="form.measureUnit" placeholder>
                     <el-option
-                      v-for="item in specifications"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
+                      v-for="(val, key) in ssd_measure_unit"
+                      :key="val"
+                      :label="val"
+                      :value="key"
                     />
                   </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="11">
-                <el-form-item label="包所属类别">
-                  <el-select v-model="form.type" placeholder="">
-                    <el-option
-                      v-for="item in type"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
-                    />
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row type="flex" justify="space-between">
-              <el-col :span="11">
-                <el-form-item label="是否打包">
-                  <el-radio-group v-model="form.ifPackaging">
-                    <el-radio label="是" />
-                    <el-radio label="否" />
-                  </el-radio-group>
                 </el-form-item>
               </el-col>
               <el-col :span="11">
                 <el-form-item label="包装材料">
-                  <el-input v-model="form.materials" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row type="flex" justify="space-between">
-              <el-col :span="11">
-                <el-form-item label="有效天数">
-                  <el-input v-model="form.effectiveDays" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="11">
-                <el-form-item label="标签大小">
-                  <el-select v-model="form.labelSize" placeholder>
-                    <el-option
-                      v-for="item in labelSize"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
-                    />
-                  </el-select>
+                  <el-input v-model="form.packMaterial" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -232,43 +303,39 @@
                 </el-form-item>
               </el-col>
               <el-col :span="11">
-                <el-form-item label="是否清洗">
-                  <el-radio-group v-model="form.ifCleaning">
-                    <el-radio label="是" />
-                    <el-radio label="否" />
-                  </el-radio-group>
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row type="flex" justify="space-between">
-              <el-col :span="11">
-                <el-form-item label="是否灭菌">
-                  <el-radio-group v-model="form.ifSterilization">
-                    <el-radio label="是" />
-                    <el-radio label="否" />
-                  </el-radio-group>
-                </el-form-item>
-              </el-col>
-              <el-col :span="11">
                 <el-form-item label="清洗程序">
-                  <el-input v-model="form.cleaningSequence" />
+                  <el-select v-model="form.cleanPro" placeholder>
+                    <el-option
+                      v-for="(val, key) in CLEAN_PROGRAM"
+                      :key="val"
+                      :label="val"
+                      :value="key"
+                    />
+                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row type="flex" justify="space-between">
               <el-col :span="11">
                 <el-form-item label="灭菌程序">
-                  <el-input v-model="form.sterilizationSequence" />
+                  <el-select v-model="form.sterilizePro" placeholder>
+                    <el-option
+                      v-for="(val, key) in STERILIZE_PROGRAM"
+                      :key="val"
+                      :label="val"
+                      :value="key"
+                    />
+                  </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="11">
                 <el-form-item label="灭菌方法">
-                  <el-select v-model="form.sterilizationMethod" placeholder>
+                  <el-select v-model="form.sterilizeMethod" placeholder>
                     <el-option
-                      v-for="item in sterilizationMethod"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.value"
+                      v-for="(val, key) in STERILIZE_METHOD"
+                      :key="val"
+                      :label="val"
+                      :value="key"
                     />
                   </el-select>
                 </el-form-item>
@@ -277,7 +344,7 @@
             <el-row>
               <el-col :span="24">
                 <el-form-item label="备注">
-                  <el-input v-model="form.instructions" />
+                  <el-input v-model="form.remark" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -287,27 +354,28 @@
       <div slot="footer" class="dialog-footer">
         <el-button v-show="!edit" type="primary" @click="addSubmit">确认</el-button>
         <el-button v-show="edit" type="primary" @click="editSubmit">确认</el-button>
-        <el-button type="bgc" @click="emptyClick">信息清空</el-button>
+        <el-button type="bgc" @click="editShow=false">取消</el-button>
       </div>
     </el-dialog>
     <!-- 新增包弹窗end -->
-    <!-- 上传弹窗 -->
-    <el-dialog v-el-drag-dialog :visible.sync="dialogVisible" title="图片" width="800px">
+    <!-- 上传图片弹窗 -->
+    <el-dialog v-el-drag-dialog :visible.sync="dialogVisible" title="包图片" width="800px">
       <div class="dialog-main img-main">
         <el-upload
           :multiple="true"
-          :file-list="fileList"
           :show-file-list="true"
+          accept=".jpg, .jpeg, .png, .gif"
+          :headers="{Authorization:token}"
           :on-remove="handleRemove"
           :on-success="handleSuccess"
+          :file-list="fileList"
           :before-upload="beforeUpload"
           class="editor-slide-upload"
-          action="https://httpbin.org/post"
+          :action="action"
           list-type="picture-card"
+          name="files"
         >
-          <el-button size="small" type="primary">
-            点击上传
-          </el-button>
+          <el-button size="small" type="primary">点击上传</el-button>
         </el-upload>
       </div>
       <div slot="footer" class="dialog-footer">
@@ -315,365 +383,327 @@
         <el-button type="primary" @click="handleSubmit">确定</el-button>
       </div>
     </el-dialog>
-    <!-- 上传弹窗end -->
+    <!-- 上传图片弹窗end -->
+    <!-- 上传图片弹窗 -->
+    <el-dialog v-el-drag-dialog :visible.sync="packageVisible" title="封包指引教程" width="800px">
+      <div class="dialog-main package-main">
+        <div class="dialog-main-box">
+          <el-tabs v-model="activeName" style="height:40px" @tab-click="tabsChange">
+            <el-tab-pane label="图片教程" name="packageImage" />
+            <el-tab-pane label="视频教程" name="packageVideo" />
+          </el-tabs>
+          <transition name="fade-transform" mode="out-in">
+            <component :is="isComponent" style="margin-top:10px" :file-list="fileList" :form="form" @formChange="formChange" />
+          </transition>
+        </div>
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="packageVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit">确定</el-button>
+      </div>
+    </el-dialog>
+    <!-- 上传图片弹窗end -->
     <!-- 图片查看器 -->
-    <el-image-viewer
-      v-show="imgShow"
-      :on-close="viewerClose"
-      :url-list="srcList"
-    />
+    <el-image-viewer v-if="imgShow" :on-close="viewerClose" :url-list="srcList" />
     <!-- 图片查看器end -->
   </div>
 </template>
 
 <script>
 import myfilters from '@/components/myfilters'
+import myPagination from '@/components/MyPagination'
+import api from '@/api'
+import APIconfig from '@/api/APIconfig'
+import { getToken } from '@/utils/auth'
+import packageImage from './packageImage'
+import packageVideo from './packageVideo'
+const fileURL = api.fileURL
 
 export default {
   components: {
-    myfilters
+    myfilters,
+    myPagination,
+    packageImage,
+    packageVideo
   },
+  inject: ['reload'],
   data() {
     return {
-      url: '',
+      action: fileURL,
+      listLoading: true,
+      rules: {
+        name: [{ required: true, message: '请输入包名称', trigger: 'blur' }],
+        category: [
+          { required: true, message: '请选择包所属类别', trigger: 'blur' }
+        ],
+        cleanFlag: [
+          { required: true, message: '请选择是否清洗', trigger: 'blur' }
+        ],
+        packFlag: [
+          { required: true, message: '请选择是否打包', trigger: 'blur' }
+        ],
+        serialNumber: [
+          { required: true, message: '请输入消毒包编号', trigger: 'blur' }
+        ],
+        sterilizeFlag: [
+          { required: true, message: '请选择是否灭菌', trigger: 'blur' }
+        ],
+        tagSize: [
+          { required: true, message: '请选择标签大小', trigger: 'blur' }
+        ],
+        validDay: [
+          { required: true, message: '请输入有效天数', trigger: 'blur' }
+        ]
+      },
       srcList: [],
-      tbox: true,
-      pbox: false,
-      listObj: {},
       fileList: [],
       dialogVisible: false,
-      code: '',
-      tableData: [
-        {
-          package: '糖足包',
-          pinyinWriting: 'pg',
-          wubingWriting: 'eup',
-          customCode: 'EBSSS010',
-          specifications: '包',
-          price: '20',
-          unit: '包',
-          type: '器械包',
-          ifPackaging: '是',
-          materials: '无纺布',
-          effectiveDays: '30',
-          labelSize: '中条码',
-          surcharge: '0',
-          ifCleaning: '是',
-          ifSterilization: '是',
-          cleaningSequence: 'P1',
-          sterilizationSequence: 'P1',
-          sterilizationMethod: '高温灭菌',
-          instructions: '',
-          url: require('@/assets/images/step7.jpg'),
-          srcList: [
-            require('@/assets/images/step7.jpg')
-          ]
-        },
-        {
-          package: '膀胱镜',
-          pinyinWriting: 'pg',
-          wubingWriting: 'eup',
-          customCode: 'EBSSS010',
-          specifications: '包',
-          price: '20',
-          unit: '包',
-          type: '器械包',
-          ifPackaging: '是',
-          materials: '无纺布',
-          effectiveDays: '30',
-          labelSize: '中条码',
-          surcharge: '0',
-          ifCleaning: '是',
-          ifSterilization: '是',
-          cleaningSequence: 'P1',
-          sterilizationSequence: 'P1',
-          sterilizationMethod: '高温灭菌',
-          instructions: '',
-          url: 'https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=3276390503,1782042866&fm=26&gp=0.jpg',
-          srcList: [
-            'https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=3276390503,1782042866&fm=26&gp=0.jpg'
-          ]
-        },
-        {
-          package: '膀胱镜',
-          pinyinWriting: 'pg',
-          wubingWriting: 'eup',
-          customCode: 'EBSSS010',
-          specifications: '包',
-          price: '20',
-          unit: '包',
-          type: '器械包',
-          ifPackaging: '是',
-          materials: '无纺布',
-          effectiveDays: '30',
-          labelSize: '中条码',
-          surcharge: '0',
-          ifCleaning: '是',
-          ifSterilization: '是',
-          cleaningSequence: 'P1',
-          sterilizationSequence: 'P1',
-          sterilizationMethod: '高温灭菌',
-          instructions: '',
-          url: 'https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=3276390503,1782042866&fm=26&gp=0.jpg',
-          srcList: [
-            'https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=3276390503,1782042866&fm=26&gp=0.jpg'
-          ]
-        }
-      ],
-      specifications: [
-        {
-          value: '包',
-          label: '包'
-        },
-        {
-          value: '件',
-          label: '件'
-        },
-        {
-          value: '个',
-          label: '个'
-        },
-        {
-          value: '根',
-          label: '根'
-        },
-        {
-          value: '瓶',
-          label: '瓶'
-        },
-        {
-          value: '盘',
-          label: '盘'
-        }
-      ],
-      type: [
-        {
-          value: '器械包',
-          label: '器械包'
-        },
-        {
-          value: '外来包',
-          label: '外来包'
-        },
-        {
-          value: '一次性包',
-          label: '一次性包'
-        },
-        {
-          value: '消毒包',
-          label: '消毒包'
-        },
-        {
-          value: '特殊包',
-          label: '特殊包'
-        },
-        {
-          value: '其他',
-          label: '其他'
-        }
-      ],
-      labelSize: [
-        {
-          value: '大条码',
-          label: '大条码'
-        },
-        {
-          value: '中条码',
-          label: '中条码'
-        },
-        {
-          value: '小条码',
-          label: '小条码'
-        }
-      ],
-      sterilizationMethod: [
-        {
-          value: '高温高压灭菌',
-          label: '高温高压灭菌'
-        },
-        {
-          value: '低温灭菌',
-          label: '低温灭菌'
-        }
-      ],
-      form: {
-        package: '',
-        pinyinWriting: '',
-        wubingWriting: '',
-        customCode: '',
-        specifications: '',
-        price: '',
-        unit: '',
-        type: '',
-        ifPackaging: '',
-        materials: '',
-        effectiveDays: '',
-        labelSize: '',
-        surcharge: '',
-        ifCleaning: '',
-        ifSterilization: '',
-        cleaningSequence: '',
-        sterilizationSequence: '',
-        sterilizationMethod: '',
-        instructions: ''
-      },
+      tableData: [],
+      form: {},
       oldForm: {},
       edit: false,
       editIndex: 0,
       editShow: false,
-      title: '',
-      imgShow: false
+      imgShow: false,
+      ssd_common_boolean: null,
+      ssd_measure_unit: null,
+      ssd_packet_category: null,
+      ssd_specification: null,
+      CLEAN_PROGRAM: null,
+      STERILIZE_METHOD: null,
+      STERILIZE_PROGRAM: null,
+      VALID_PERIOD: null,
+      BARCODE_TYPE: null,
+      totalCount: 0,
+      conditions: {},
+      packageVisible: false,
+      // 打包教程类型
+      componentsList: {
+        packageImage: 'packageImage',
+        packageVideo: 'packageVideo'
+      },
+      activeName: 'packageImage',
+      row: null
     }
   },
+  computed: {
+    token() {
+      const token = getToken()
+      return `Bearer ${token}`
+    },
+    // 判断视频还是图片组件
+    isComponent() {
+      return this.componentsList[this.activeName]
+    }
+  },
+  created() {
+    this.fetchData()
+  },
   methods: {
-    // 新增包弹窗 信息清空按钮
-    emptyClick() {
-      this.form = {
-        package: '',
-        pinyinWriting: '',
-        wubingWriting: '',
-        customCode: '',
-        specifications: '',
-        price: '',
-        unit: '',
-        type: '',
-        ifPackaging: '',
-        materials: '',
-        effectiveDays: '',
-        labelSize: '',
-        surcharge: '',
-        ifCleaning: '',
-        ifSterilization: '',
-        cleaningSequence: '',
-        sterilizationSequence: '',
-        sterilizationMethod: '',
-        instructions: ''
-      }
+    fetchData() {
+      this.listLoading = true
+      api.topacketPage().then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.totalCount = response.data.totalCount
+          this.ssd_common_boolean = response.data.dictData.ssd_common_boolean
+          this.ssd_measure_unit = response.data.dictData.ssd_measure_unit
+          this.ssd_packet_category = response.data.dictData.ssd_packet_category
+          this.ssd_specification = response.data.dictData.ssd_specification
+          this.tableData = response.data.records
+          this.listLoading = false
+        }
+      })
+      api
+        .toconstanttypeBatch({
+          constantCodes: [
+            'CLEAN_PROGRAM',
+            'STERILIZE_METHOD',
+            'STERILIZE_PROGRAM',
+            'VALID_PERIOD',
+            'BARCODE_TYPE'
+          ]
+        })
+        .then(response => {
+          // console.log(response)
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.CLEAN_PROGRAM = response.data.constantsDetail.CLEAN_PROGRAM
+            this.STERILIZE_METHOD =
+              response.data.constantsDetail.STERILIZE_METHOD
+            this.STERILIZE_PROGRAM =
+              response.data.constantsDetail.STERILIZE_PROGRAM
+            this.VALID_PERIOD = response.data.constantsDetail.VALID_PERIOD
+            this.BARCODE_TYPE = response.data.constantsDetail.BARCODE_TYPE
+          }
+        })
     },
     // 图片查看器关闭
     viewerClose() {
       this.imgShow = false
     },
-    // 图片查看器开启
-    handleImg(src) {
-      this.imgShow = true
-      this.srcList = src
-    },
     // 操作下拉的点击
     handleCommand({ index, row, action }) {
       this[action](index, row)
     },
+    imgSrc(imageInfo) {
+      return `${APIconfig.baseUrl}/${imageInfo}`
+    },
+    imgClick(index, row) {
+      this.srcList = []
+      row.images.forEach(item => {
+        this.srcList.push(this.imgSrc(item.url))
+      })
+      this.imgShow = true
+    },
     // 上传
-    handleUpload() {
+    handleUpload(index, row) {
+      this.form = {
+        busiId: row.id,
+        busiType: '2'
+      }
+      this.fileList = []
+      if (row.images) {
+        row.images.forEach((item, index) => {
+          const img = {
+            uid: item.id,
+            url: this.imgSrc(item.url)
+          }
+          this.fileList.push(img)
+        })
+      }
       this.dialogVisible = true
     },
-    // 查看所有图片是否上传完毕
-    checkAllSuccess() {
-      return Object.keys(this.listObj).every(item => this.listObj[item].hasSuccess)
+    tabsChange() {
+      this.getTabsInfo(this.row)
+    },
+    handlePackage(index, row) {
+      this.row = row
+      this.getTabsInfo(row)
+      this.packageVisible = true
+    },
+    getTabsInfo(row) {
+      if (this.activeName === 'packageImage') {
+        this.form = {
+          busiId: row.id,
+          busiType: '6'
+        }
+        this.fileList = []
+        if (row.imagesCourse) {
+          row.imagesCourse.forEach((item, index) => {
+            const img = {
+              uid: item.id,
+              url: this.imgSrc(item.url)
+            }
+            this.fileList.push(img)
+          })
+        }
+      } else {
+        this.form = {
+          busiId: row.id,
+          busiType: '7'
+        }
+        // this.fileList = row.videosCourse
+        this.fileList = []
+        this.fileList.push(row.videosCourse)
+        // this.fileList.push('/upload/20201016/2020101615420408467432.mp4')
+        console.log(this.fileList)
+      }
     },
     // 上传弹窗确认按钮
     handleSubmit() {
-      const arr = Object.keys(this.listObj).map(v => this.listObj[v])
-      if (!this.checkAllSuccess()) {
-        this.$message({
-          message: '请等待所有图片上传完毕',
-          type: 'warning'
-        })
-        return
-      }
-      this.$emit('successCBK', arr)
-      this.listObj = {}
-      this.fileList = []
+      this.reload()
       this.dialogVisible = false
+    },
+    formChange(form) {
+      this.form = form
     },
     // 上传成功
     handleSuccess(response, file) {
-      const uid = file.uid
-      const objKeyArr = Object.keys(this.listObj)
-      for (let i = 0, len = objKeyArr.length; i < len; i++) {
-        if (this.listObj[objKeyArr[i]].uid === uid) {
-          this.listObj[objKeyArr[i]].url = response.files.file
-          this.listObj[objKeyArr[i]].hasSuccess = true
-          return
-        }
+      if (!response.success) {
+        return this.$message.error(response.errMsg)
       }
+      this.form.imageInfo = response.resData[0].filePath
+      api.toPostImage(this.form).then(res => {
+        file.uid = res.data.id
+        if (res.code === '200' && res.data.busiCode === '1') {
+          // this.fileList.push(res.data)
+          this.$message({
+            message: '上传成功',
+            type: 'success'
+          })
+        }
+      })
     },
     // 移除上传内容
     handleRemove(file) {
-      const uid = file.uid
-      const objKeyArr = Object.keys(this.listObj)
-      for (let i = 0, len = objKeyArr.length; i < len; i++) {
-        if (this.listObj[objKeyArr[i]].uid === uid) {
-          delete this.listObj[objKeyArr[i]]
-          return
+      api.deleteImage({ id: file.uid }).then(res => {
+        if (res.code === '200' && res.data.busiCode === '1') {
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
         }
-      }
+      })
     },
     // 上传的动作
     beforeUpload(file) {
-      const _self = this
-      const _URL = window.URL || window.webkitURL
-      const fileName = file.uid
-      this.listObj[fileName] = {}
-      return new Promise((resolve, reject) => {
-        const img = new Image()
-        img.src = _URL.createObjectURL(file)
-        img.onload = function() {
-          _self.listObj[fileName] = { hasSuccess: false, uid: file.uid, width: this.width, height: this.height }
-        }
-        resolve(true)
-      })
+      const typeCheck = file.type === 'image/jpeg' || file.type === 'image/png'
+      if (!typeCheck) {
+        this.$message.error('上传图片只支持 JPG 或PNG 格式!')
+        return new Promise((resolve, reject) => {
+          reject(false)
+        })
+      }
     },
     // 查看明细
     handleDetails(index, row, box) {
-      this.title = row.package + '明细'
       this.$router.push({
         name: 'packageDetails',
-        params: { title: this.title }
+        query: {
+          packetId: row.id
+        }
       })
     },
     // 删除
     handleDelete(index, row) {
-      this.$message({
-        message: '删除成功',
-        type: 'success'
+      api.toDeletepacket(row).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData.splice(index, 1)
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
+        }
       })
-      this.tableData.splice(index, 1)
     },
     // 新增
     addClick() {
       this.edit = false
       this.editShow = true
-      this.form = {
-        package: '',
-        pinyinWriting: '',
-        wubingWriting: '',
-        customCode: '',
-        specifications: '',
-        price: '',
-        unit: '',
-        type: '',
-        ifPackaging: '',
-        materials: '',
-        effectiveDays: '',
-        labelSize: '',
-        surcharge: '',
-        ifCleaning: '',
-        ifSterilization: '',
-        cleaningSequence: '',
-        sterilizationSequence: '',
-        sterilizationMethod: '',
-        instructions: ''
-      }
+      this.form = {}
     },
     // 新增弹窗确认按钮
     addSubmit() {
-      this.$message({
-        message: '添加成功',
-        type: 'success'
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toAddpackett(this.form).then(response => {
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.tableData.push(response.data)
+              this.$message({
+                message: '添加成功',
+                type: 'success'
+              })
+            }
+          })
+          this.editShow = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
-      this.tableData.push(this.form)
-      this.editShow = false
     },
     // 编辑
     handleEdit(index, row) {
@@ -685,16 +715,44 @@ export default {
     },
     // 编辑确认
     editSubmit() {
-      this.editShow = false
       if (JSON.stringify(this.form) === JSON.stringify(this.oldForm)) {
         this.$message('无信息修改')
+        this.editShow = false
         return
       }
-      this.$message({
-        message: '修改成功',
-        type: 'success'
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toRevisepacket(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.tableData.splice(this.editIndex, 1, response.data)
+              this.$message({
+                message: '修改成功',
+                type: 'success'
+              })
+            }
+          })
+          this.editShow = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
-      this.tableData.splice(this.editIndex, 1, this.form)
+    },
+    contentChange(content) {
+      this.$set(this.conditions, 'keyword', content)
+      this.$set(this.conditions, 'pageNo', 1)
+      this.listLoading = true
+      api.topacketPage(this.conditions).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.listLoading = false
+        }
+      })
     }
   }
 }
@@ -716,7 +774,41 @@ export default {
 .dialog-main {
   padding: 0;
 }
+.package-main,
 .img-main {
-  padding: 30px 20px;
+  padding: 20px 20px;
+  .dialog-main-box {
+    position: relative;
+    background: rgba(246, 246, 246, 1);
+    border: 1px dotted rgba(175, 179, 192, 1);
+    padding: 20px 25px;
+  }
+}
+::v-deep {
+  .is-uploading,
+  .is-ready,
+  .el-list-leave,
+  .el-list-enter,
+  .el-list-leave-active {
+    display: none;
+  }
+}
+.dropdown {
+  margin-right: 5px;
+}
+::v-deep .package-main {
+  .el-tabs__nav-wrap::after {
+    display: none;
+  }
+  .el-tabs__item {
+    font-size: 18px;
+  }
+  .el-tabs__active-bar {
+    height: 3px;
+  }
+  .children-code {
+    float: right;
+    color: #AFB3C0;
+  }
 }
 </style>

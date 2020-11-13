@@ -1,11 +1,5 @@
 <template>
   <div :class="{'has-logo':showLogo}">
-    <!-- <div class="company"> -->
-    <!-- <img class="pic_logo" src="@/assets/images/logo.png" alt="logo"> -->
-    <!-- <div class="logo_txt">
-        <img src="../../../assets/images/title.png">
-      </div>
-    </div> -->
     <logo v-if="showLogo" :collapse="isCollapse" />
     <el-scrollbar wrap-class="scrollbar-wrapper">
       <el-menu
@@ -18,7 +12,7 @@
         :collapse-transition="false"
         mode="vertical"
       >
-        <sidebar-item v-for="route in routes" :key="route.path" :item="route" :base-path="route.path" />
+        <sidebar-item v-for="route in sidebar_view" :key="route.path" :item="route" :base-path="route.path" />
       </el-menu>
     </el-scrollbar>
   </div>
@@ -34,11 +28,13 @@ export default {
   components: { SidebarItem, Logo },
   computed: {
     ...mapGetters([
+      'sidebar_view',
       'sidebar'
     ]),
-    routes() {
-      return this.$router.options.routes
-    },
+    // routes() {
+    //   console.log(this.$router.options.routes)
+    //   return this.$router.options.routes
+    // },
     activeMenu() {
       const route = this.$route
       const { meta, path } = route

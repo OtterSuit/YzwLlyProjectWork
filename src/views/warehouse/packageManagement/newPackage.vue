@@ -82,7 +82,7 @@
                     <packageImage />
                   </div>
                 </el-tab-pane>
-                <el-tab-pane label="包装教程" name="viedoCourse">
+                <el-tab-pane label="包装教程" name="videoCourse">
                   <div style="margin-top:10px">
                     <!-- scrollbar -->
                     <el-scrollbar style="height:480px">
@@ -91,8 +91,8 @@
                         <el-collapse-item title="图片教程" name="pictureCourse">
                           <pictureCourse />
                         </el-collapse-item>
-                        <el-collapse-item title="视频教程" name="viedoCourse">
-                          <viedoCourse />
+                        <el-collapse-item title="视频教程" name="videoCourse">
+                          <videoCourse />
                         </el-collapse-item>
                       </el-collapse>
                       <!-- collapse end -->
@@ -203,13 +203,13 @@
 import myfilters from '@/components/myfilters'
 import packageImage from './packageImage'
 import pictureCourse from './pictureCourse'
-import viedoCourse from './viedoCourse'
+import videoCourse from './videoCourse'
 
 export default {
   components: {
     myfilters,
     packageImage,
-    viedoCourse,
+    videoCourse,
     pictureCourse
   },
   data() {
@@ -231,7 +231,7 @@ export default {
         count: ''
       },
       packageName: '', // 新包名称
-      activeName: 'viedoCourse', // tabs选项
+      activeName: 'videoCourse', // tabs选项
       activeNames: 'pictureCourse', // collapse选项
       // 器械数据
       tableData: [
@@ -380,9 +380,6 @@ export default {
 ::v-deep .el-input__inner{
     width: 100%;
     margin: 0;
-}
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
 }
 .el-dropdown-menu__item {
   padding: 0 20px;

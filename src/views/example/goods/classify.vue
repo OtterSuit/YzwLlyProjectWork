@@ -3,33 +3,36 @@
     <!-- 头部 -->
     <myfilters
       :title="title"
-      addifo="新增"
-      add-icon="el-icon-circle-plus-outline"
       :add-button="true"
+      :search-content="true"
+      placeholder="物品名称/编码"
+      @contentChange="contentChange"
       @addClick="addClick"
     />
     <!-- 头部end -->
     <!-- 图片查看器 -->
-    <el-image-viewer
-      v-show="imgShow"
-      :on-close="viewerClose"
-      :url-list="srcList"
-    />
+    <el-image-viewer v-if="imgShow" :on-close="viewerClose" :url-list="srcList" />
     <!-- 图片查看器end -->
     <!-- table -->
-    <el-table
-      :data="tableData"
-      style="width: 100%"
-    >
+    <el-table v-loading="listLoading" :data="tableData" style="width: 100%">
       <!-- 详细内部内容 start-->
       <el-table-column type="expand">
         <template slot-scope="props">
           <el-form label-position="left" inline class="demo-table-expand">
+            <el-form-item label="仓库">
+              <span>{{ props.row.warehouse }}</span>
+            </el-form-item>
+            <el-form-item label="有效科室">
+              <span>{{ props.row.effctiveDepartment }}</span>
+            </el-form-item>
+            <el-form-item label="最新入库单价">
+              <span>{{ props.row.newestUnitPrice }}</span>
+            </el-form-item>
             <el-form-item label="拼音编码">
-              <span>{{ props.row.pinyinWriting }}</span>
+              <span>{{ props.row.spellCode }}</span>
             </el-form-item>
             <el-form-item label="五笔编码">
-              <span>{{ props.row.wubingWriting }}</span>
+              <span>{{ props.row.strokeCode }}</span>
             </el-form-item>
             <el-form-item label="自定义码 ">
               <span>{{ props.row.customCode }}</span>
@@ -41,64 +44,64 @@
               <span>{{ props.row.alias }}</span>
             </el-form-item>
             <el-form-item label="别名拼音码">
-              <span>{{ props.row.aliaspinyinCode }}</span>
+              <span>{{ props.row.aliasSpellCode }}</span>
             </el-form-item>
             <el-form-item label="别名五笔码">
-              <span>{{ props.row.aliasWubiCode }}</span>
+              <span>{{ props.row.aliasStrokeCode }}</span>
             </el-form-item>
             <el-form-item label="别名自定义码">
               <span>{{ props.row.aliasCustomCode }}</span>
             </el-form-item>
             <el-form-item label="零售单价">
-              <span>{{ props.row.retailPrice }}</span>
+              <span>{{ props.row.retailUnitPrice }}</span>
             </el-form-item>
-            <el-form-item label="大包装单价">
-              <span>{{ props.row.rargePackage }}</span>
-            </el-form-item>
-            <el-form-item label="加价规则">
-              <span>{{ props.row.markupRules }}</span>
-            </el-form-item>
-            <el-form-item label="最小费用代码">
-              <span>{{ props.row.minimumCode }}</span>
+            <el-form-item label="财务收费标记">
+              <span>{{ ssd_common_boolean[props.row.financialChargeFlag] }}</span>
             </el-form-item>
             <el-form-item label="财务收费标准">
-              <span>{{ props.row.chargeSign }}</span>
-            </el-form-item>
-            <el-form-item label="停用标记">
-              <span>{{ props.row.deactivateTag }}</span>
-            </el-form-item>
-            <el-form-item label="生产厂家">
-              <span>{{ props.row.manufacturer }}</span>
-            </el-form-item>
-            <el-form-item label="供货公司">
-              <span>{{ props.row.supplyCompany }}</span>
+              <span>{{ ssd_common_boolean[props.row.financialChargeStandard] }}</span>
             </el-form-item>
             <el-form-item label="来源">
-              <span>{{ props.row.comeFrom }}</span>
+              <span>{{ props.row.source }}</span>
             </el-form-item>
             <el-form-item label="用途">
-              <span>{{ props.row.application }}</span>
+              <span>{{ props.row.usageInfo }}</span>
             </el-form-item>
             <el-form-item label="批文信息">
-              <span>{{ props.row.approvalInformation }}</span>
+              <span>{{ props.row.approveImformation }}</span>
             </el-form-item>
             <el-form-item label="生产者">
               <span>{{ props.row.producer }}</span>
             </el-form-item>
             <el-form-item label="注册号">
-              <span>{{ props.row.registrationNum }}</span>
+              <span>{{ props.row.registerNumber }}</span>
             </el-form-item>
             <el-form-item label="特殊类别">
               <span>{{ props.row.specialCategory }}</span>
             </el-form-item>
             <el-form-item label="注册日期">
-              <span>{{ props.row.registrationDate }}</span>
+              <span>{{ props.row.registerDate }}</span>
             </el-form-item>
             <el-form-item label="到期日期">
-              <span>{{ props.row.dateExpiry }}</span>
+              <span>{{ props.row.expireDate }}</span>
             </el-form-item>
-            <el-form-item label="财务审核标记">
-              <span>{{ props.row.financialAuditMark }}</span>
+            <el-form-item label="高值耗材标记">
+              <span>{{ ssd_common_boolean[props.row.highValueflag] }}</span>
+            </el-form-item>
+            <el-form-item label="批次管理">
+              <span>{{ ssd_common_boolean[props.row.batchManageFlag] }}</span>
+            </el-form-item>
+            <el-form-item label="招标项目">
+              <span>{{ ssd_common_boolean[props.row.bidFlag] }}</span>
+            </el-form-item>
+            <el-form-item label="为一次性耗材">
+              <span>{{ ssd_common_boolean[props.row.oneTime] }}</span>
+            </el-form-item>
+            <el-form-item label="按月计划入库">
+              <span>{{ ssd_common_boolean[props.row.stockMonthlyFlag] }}</span>
+            </el-form-item>
+            <el-form-item label="备注">
+              <span>{{ props.row.remark }}</span>
             </el-form-item>
           </el-form>
         </template>
@@ -106,67 +109,48 @@
       <!-- 详细内部内容 end -->
       <el-table-column label="缩略图" align="center">
         <template slot-scope="scope">
-          <img
-            style="width: 70px;cursor:pointer"
-            :src="scope.row.url"
-            @click="handleImage(scope.row.srcList)"
-          >
+          <img v-if="scope.row.images" style="width: 70px;cursor:pointer" :src="imgSrc(scope.row.images[0].url)" @click="imgClick(scope.$index,scope.row)">
         </template>
       </el-table-column>
-      <el-table-column
-        prop="itemName"
-        label="物品名称"
-      />
-      <el-table-column
-        prop="warehouse"
-        label="仓库"
-      />
-      <el-table-column
-        prop="effectiveRange"
-        label="有效范围"
-      />
-      <el-table-column
-        prop="standard"
-        label="规格"
-      />
-      <el-table-column
-        prop="smallestUnit"
-        label="最小单位"
-      />
-      <el-table-column
-        prop="unitPrice"
-        label="最新入库单价"
-        width="110"
-      />
-      <el-table-column
-        prop="materialMark"
-        label="特殊耗材标志"
-        width="110"
-      />
-      <el-table-column
-        prop="whetherPack"
-        label="是否打包"
-      />
-      <el-table-column
-        label="操作员"
-        prop="operator"
-      />
-      <el-table-column
-        label="操作日期"
-        prop="operatorData"
-      />
-      <el-table-column
-        label="备注"
-        prop="mark"
-      />
-      <el-table-column align="center">
+      <el-table-column prop="name" label="物品名称" />
+      <el-table-column prop="itemCode" label="物品编码" />
+      <el-table-column label="有效范围">
+        <template slot-scope="scope">{{ ssd_effective_range[scope.row.effctiveRange] }}</template>
+      </el-table-column>
+      <el-table-column label="规格">
+        <template slot-scope="scope">{{ ssd_specification[scope.row.spec] }}</template>
+      </el-table-column>
+      <el-table-column label="最小单位">
+        <template slot-scope="scope">{{ ssd_measure_unit[scope.row.miniUnit] }}</template>
+      </el-table-column>
+      <el-table-column label="大包装单位" width="100">
+        <template slot-scope="scope">{{ ssd_measure_unit[scope.row.largePackUnit] }}</template>
+      </el-table-column>
+      <el-table-column label="加价规则">
+        <template slot-scope="scope">{{ ssd_markup_role[scope.row.markupRole] }}</template>
+      </el-table-column>
+      <el-table-column label="特殊耗材">
+        <template slot-scope="scope">{{ ssd_common_boolean[scope.row.specialConsumableMark] }}</template>
+      </el-table-column>
+      <el-table-column label="是否打包">
+        <template slot-scope="scope">{{ ssd_common_boolean[scope.row.packFlag] }}</template>
+      </el-table-column>
+      <el-table-column label="停用标记">
+        <template slot-scope="scope">{{ ssd_common_boolean[scope.row.stopFlag] }}</template>
+      </el-table-column>
+      <el-table-column label="财务审核">
+        <template slot-scope="scope">{{ ssd_common_boolean[scope.row.financialAuditFlag] }}</template>
+      </el-table-column>
+      <el-table-column prop="manufacturerName" label="生产厂家" />
+      <el-table-column prop="supplyCompanyName" label="供货公司" />
+      <el-table-column prop="miniFareCode" label="最小费用代码" />
+      <el-table-column>
         <template slot-scope="scope">
           <el-dropdown trigger="click" class="dropdown" @command="handleCommand">
             <span class="el-dropdown-link">
-              <el-button
-                size="mini"
-                icon="el-icon-s-tools"
-              >操作<i class="el-icon-arrow-down el-icon--right" />
+              <el-button size="mini" icon="el-icon-s-tools">
+                操作
+                <i class="el-icon-arrow-down el-icon--right" />
               </el-button>
             </span>
             <el-dropdown-menu slot="dropdown">
@@ -198,28 +182,29 @@
               >删除</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
-
         </template>
       </el-table-column>
     </el-table>
+    <my-pagination :total="totalCount" methods="toconsuppliesPage" :conditions="conditions" />
     <!-- table end -->
     <!-- 图片上传弹窗 -->
     <el-dialog v-el-drag-dialog :visible.sync="dialogVisible" title="图片" width="800px">
       <div class="dialog-main img-main">
         <el-upload
           :multiple="true"
-          :file-list="fileList"
           :show-file-list="true"
+          accept=".jpg, .jpeg, .png, .gif"
+          :headers="{Authorization:token}"
           :on-remove="handleRemove"
           :on-success="handleSuccess"
+          :file-list="fileList"
           :before-upload="beforeUpload"
           class="editor-slide-upload"
-          action="https://httpbin.org/post"
+          :action="action"
           list-type="picture-card"
+          name="files"
         >
-          <el-button size="small" type="primary">
-            点击上传
-          </el-button>
+          <el-button size="small" type="primary">点击上传</el-button>
         </el-upload>
       </div>
       <div slot="footer" class="dialog-footer">
@@ -231,237 +216,385 @@
     <!-- 新增编辑弹窗 -->
     <el-dialog v-el-drag-dialog title="物资信息" :visible.sync="show" width="1200px">
       <div class="dialog-main goods-main">
-        <el-scrollbar>
-          <el-form ref="form" :model="form" label-width="100px" class="scrollbar-form">
+        <el-scrollbar :class="{scrollbarHidden:activeNames.length!==1}">
+          <el-form
+            ref="form"
+            :model="form"
+            :rules="rules"
+            label-width="100px"
+            class="scrollbar-form"
+          >
             <el-row type="flex" :gutter="20">
               <el-col :span="6">
-                <el-form-item label="物品名称">
-                  <el-input v-model="form.itemName" />
+                <el-form-item label="物品名称" prop="name">
+                  <el-input v-model="form.name" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="仓库">
-                  <el-input v-model="form.warehouse" />
+                <el-form-item label="物品编码" prop="itemCode">
+                  <el-input v-model="form.itemCode" />
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="拼音编码">
-                  <el-input v-model="form.pinyinWriting" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="五笔编码">
-                  <el-input v-model="form.wubingWriting" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row type="flex" :gutter="20">
-              <el-col :span="6">
-                <el-form-item label="自定义码">
-                  <el-input v-model="form.customCode" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="国家编码">
-                  <el-input v-model="form.countryCode" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="别名">
-                  <el-input v-model="form.alias" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="别名拼音码">
-                  <el-input v-model="form.aliaspinyinCode" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row type="flex" :gutter="20">
-              <el-col :span="6">
-                <el-form-item label="别名五笔码">
-                  <el-input v-model="form.aliasWubiCode" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="别名自定义码">
-                  <el-input v-model="form.aliasCustomCode" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="有效范围">
-                  <el-select v-model="form.effectiveRange" placeholder="">
-                    <el-option label="供应室" value="供应室" />
-                    <el-option label="护理部" value="护理部" />
-                    <el-option label="物资部" value="物资部" />
-                    <el-option label="信息科" value="信息科" />
-                    <el-option label="其他" value="其他" />
+                <el-form-item label="有效范围" prop="effctiveRange">
+                  <el-select v-model="form.effctiveRange" placeholder>
+                    <el-option
+                      v-for="(val, key) in ssd_effective_range"
+                      :key="val"
+                      :label="val"
+                      :value="key"
+                    />
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="规格">
-                  <el-input v-model="form.standard" />
+                <el-form-item label="规格" prop="spec">
+                  <el-select v-model="form.spec" placeholder>
+                    <el-option
+                      v-for="(val, key) in ssd_specification"
+                      :key="val"
+                      :label="val"
+                      :value="key"
+                    />
+                  </el-select>
                 </el-form-item>
               </el-col>
             </el-row>
             <el-row type="flex" :gutter="20">
               <el-col :span="6">
-                <el-form-item label="最小单位">
-                  <el-select v-model="form.smallestUnit" placeholder="">
-                    <el-option label="支" value="支" />
-                    <el-option label="公斤" value="公斤" />
-                    <el-option label="升" value="升" />
-                    <el-option label="盘" value="盘" />
-                    <el-option label="其他" value="其他" />
+                <el-form-item label="最小单位" prop="miniUnit">
+                  <el-select v-model="form.miniUnit" placeholder>
+                    <el-option
+                      v-for="(val, key) in ssd_measure_unit"
+                      :key="val"
+                      :label="val"
+                      :value="+key"
+                    />
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="最新入库单价">
-                  <el-input v-model="form.unitPrice" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="零售单价">
-                  <el-input v-model="form.retailPrice" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="大包装单价">
-                  <el-input v-model="form.rargePackage" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row type="flex" :gutter="20">
-              <el-col :span="6">
-                <el-form-item label="加价规则">
-                  <el-select v-model="form.markupRules" placeholder="">
-                    <el-option label="不加价" value="不加价" />
-                    <el-option label="按固定加" value="按固定加" />
-                    <el-option label="按价格加" value="按价格加" />
-                    <el-option label="按规格加" value="按规格加" />
-                    <el-option label="其他" value="其他" />
+                <el-form-item label="大包装单位" prop="largePackUnit">
+                  <el-select v-model="form.largePackUnit" placeholder>
+                    <el-option
+                      v-for="(val, key) in ssd_measure_unit"
+                      :key="val"
+                      :label="val"
+                      :value="key"
+                    />
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="最小费用代码">
-                  <el-input v-model="form.minimumCode" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="财务收费标准">
-                  <el-input v-model="form.chargeSign" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="停用标记">
-                  <el-input v-model="form.deactivateTag" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row type="flex" :gutter="20">
-              <el-col :span="6">
-                <el-form-item label="特殊耗材标志">
-                  <el-input v-model="form.materialMark" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="生产厂家">
-                  <el-input v-model="form.manufacturer" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="供货公司">
-                  <el-input v-model="form.supplyCompany" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="来源">
-                  <el-input v-model="form.comeFrom" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row type="flex" :gutter="20">
-              <el-col :span="6">
-                <el-form-item label="用途">
-                  <el-input v-model="form.application" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="批文信息">
-                  <el-input v-model="form.approvalInformation" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="生产者">
-                  <el-input v-model="form.producer" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="注册号">
-                  <el-input v-model="form.registrationNum" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row type="flex" :gutter="20">
-              <el-col :span="6">
-                <el-form-item label="特殊类别">
-                  <el-select v-model="form.specialCategory" placeholder="">
-                    <el-option label="分类1" value="分类1" />
-                    <el-option label="分类2" value="分类2" />
-                    <el-option label="分类3" value="分类3" />
-                    <el-option label="分类4" value="分类4" />
-                    <el-option label="分类5" value="分类5" />
-                    <el-option label="分类6" value="分类6" />
+                <el-form-item label="加价规则" prop="markupRole">
+                  <el-select v-model="form.markupRole" placeholder>
+                    <el-option
+                      v-for="(val, key) in ssd_markup_role"
+                      :key="val"
+                      :label="val"
+                      :value="key"
+                    />
                   </el-select>
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="注册日期">
-                  <el-date-picker
-                    v-model="form.registrationDate"
-                    type="date"
-                    :clearable="false"
-                    value-format="yyyy-MM-dd"
-                  />
+                <el-form-item label="最小费用代码" prop="miniFareCode">
+                  <el-input v-model="form.miniFareCode" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row type="flex" :gutter="20">
+              <el-col :span="6">
+                <el-form-item label="特殊耗材标志" prop="specialConsumableMark">
+                  <el-radio-group v-model="form.specialConsumableMark">
+                    <el-radio
+                      v-for="(val, key) in ssd_common_boolean"
+                      :key="val"
+                      :label="+key"
+                    >{{ val }}</el-radio>
+                  </el-radio-group>
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="到期日期">
-                  <el-date-picker
-                    v-model="form.dateExpiry"
-                    type="date"
-                    :clearable="false"
-                    value-format="yyyy-MM-dd"
-                  />
+                <el-form-item label="停用标记" prop="stopFlag">
+                  <el-radio-group v-model="form.stopFlag">
+                    <el-radio
+                      v-for="(val, key) in ssd_common_boolean"
+                      :key="val"
+                      :label="+key"
+                    >{{ val }}</el-radio>
+                  </el-radio-group>
                 </el-form-item>
               </el-col>
               <el-col :span="6">
-                <el-form-item label="是否打包">
-                  <el-radio-group v-model="form.whetherPack">
-                    <el-radio label="是">是</el-radio>
-                    <el-radio label="否">否</el-radio>
+                <el-form-item label="生产厂家" prop="manufacturer">
+                  <el-select
+                    v-model="form.manufacturerName"
+                    filterable
+                    remote
+                    reserve-keyword
+                    placeholder=""
+                    :remote-method="remoteMethodFactory"
+                    :loading="loading"
+                    @change="selectChange($event,'manufacturer','factoryOptions')"
+                  >
+                    <el-option
+                      v-for="item in factoryOptions"
+                      :key="item.id"
+                      :label="item.name"
+                      :value="item.name"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="供货公司" prop="supplyCompany">
+                  <el-select
+                    v-model="form.supplyCompanyName"
+                    filterable
+                    remote
+                    reserve-keyword
+                    placeholder=""
+                    :remote-method="remoteMethodCompany"
+                    :loading="loading"
+                    @change="selectChange($event,'supplyCompany','companyOptions')"
+                  >
+                    <el-option
+                      v-for="item in companyOptions"
+                      :key="item.id"
+                      :label="item.name"
+                      :value="item.name"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row type="flex" :gutter="20">
+              <el-col :span="6">
+                <el-form-item label="是否打包" prop="packFlag">
+                  <el-radio-group v-model="form.packFlag">
+                    <el-radio
+                      v-for="(val, key) in ssd_common_boolean"
+                      :key="val"
+                      :label="+key"
+                    >{{ val }}</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+              <el-col :span="6">
+                <el-form-item label="财务审核标记" prop="financialAuditFlag">
+                  <el-radio-group v-model="form.financialAuditFlag ">
+                    <el-radio
+                      v-for="(val, key) in ssd_common_boolean"
+                      :key="val"
+                      :label="+key"
+                    >{{ val }}</el-radio>
                   </el-radio-group>
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-row type="flex" :gutter="20">
-              <el-col :span="6">
-                <el-form-item label="财务审核标记">
-                  <el-radio-group v-model="form.financialAuditMark">
-                    <el-radio label="是">是</el-radio>
-                    <el-radio label="否">否</el-radio>
-                  </el-radio-group>
-                </el-form-item>
-              </el-col>
-              <el-col :span="18">
-                <el-form-item label="备注">
-                  <el-input v-model="form.mark" />
-                </el-form-item>
-              </el-col>
-            </el-row>
+            <el-collapse v-model="activeNames">
+              <el-collapse-item title="更多信息" name="1">
+                <el-row type="flex" :gutter="20">
+                  <el-col :span="6">
+                    <el-form-item label="拼音编码">
+                      <el-input v-model="form.spellCode" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="五笔编码">
+                      <el-input v-model="form.strokeCode" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="自定义码">
+                      <el-input v-model="form.customCode" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="国家编码">
+                      <el-input v-model="form.countryCode" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row type="flex" :gutter="20">
+                  <el-col :span="6">
+                    <el-form-item label="别名">
+                      <el-input v-model="form.alias" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="别名拼音码">
+                      <el-input v-model="form.aliasSpellCode" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="别名五笔码">
+                      <el-input v-model="form.aliasStrokeCode" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="别名自定义码">
+                      <el-input v-model="form.aliasCustomCode" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row type="flex" :gutter="20">
+                  <el-col :span="6">
+                    <el-form-item label="有效科室">
+                      <el-input v-model="form.effctiveDepartment" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="最新入库单价">
+                      <el-input v-model="form.newestUnitPrice" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="零售单价">
+                      <el-input v-model="form.retailUnitPrice" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="财务收费标记">
+                      <el-radio-group v-model="form.financialChargeFlag">
+                        <el-radio
+                          v-for="(val, key) in ssd_common_boolean"
+                          :key="val"
+                          :label="+key"
+                        >{{ val }}</el-radio>
+                      </el-radio-group>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row type="flex" :gutter="20">
+                  <el-col :span="6">
+                    <el-form-item label="财务收费标准">
+                      <el-input v-model="form.financialChargeStandard" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="高值耗材标记">
+                      <el-radio-group v-model.number="form.highValueflag">
+                        <el-radio
+                          v-for="(val, key) in ssd_common_boolean"
+                          :key="val"
+                          :label="+key"
+                        >{{ val }}</el-radio>
+                      </el-radio-group>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="为一次性耗材">
+                      <el-radio-group v-model="form.oneTime">
+                        <el-radio
+                          v-for="(val, key) in ssd_common_boolean"
+                          :key="val"
+                          :label="+key"
+                        >{{ val }}</el-radio>
+                      </el-radio-group>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="来源">
+                      <el-input v-model="form.source" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row type="flex" :gutter="20">
+                  <el-col :span="6">
+                    <el-form-item label="用途">
+                      <el-input v-model="form.usageInfo" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="批文信息">
+                      <el-input v-model="form.approveImformation" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="生产者">
+                      <el-input v-model="form.producer" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="注册号">
+                      <el-input v-model="form.registerNumber" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row type="flex" :gutter="20">
+                  <el-col :span="6">
+                    <el-form-item label="特殊类别">
+                      <el-input v-model="form.specialCategory" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="注册日期">
+                      <el-date-picker
+                        v-model="form.registerDate"
+                        type="date"
+                        value-format="yyyy-MM-dd"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="到期日期">
+                      <el-date-picker
+                        v-model="form.expireDate"
+                        type="date"
+                        value-format="yyyy-MM-dd"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="按批次管理">
+                      <el-radio-group v-model="form.batchManageFlag">
+                        <el-radio
+                          v-for="(val, key) in ssd_common_boolean"
+                          :key="val"
+                          :label="+key"
+                        >{{ val }}</el-radio>
+                      </el-radio-group>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row type="flex" :gutter="20">
+                  <el-col :span="6">
+                    <el-form-item label="为招标项目">
+                      <el-radio-group v-model="form.bidFlag">
+                        <el-radio
+                          v-for="(val, key) in ssd_common_boolean"
+                          :key="val"
+                          :label="+key"
+                        >{{ val }}</el-radio>
+                      </el-radio-group>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="按月计划入库">
+                      <el-radio-group v-model="form.stockMonthlyFlag">
+                        <el-radio
+                          v-for="(val, key) in ssd_common_boolean"
+                          :key="val"
+                          :label="+key"
+                        >{{ val }}</el-radio>
+                      </el-radio-group>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="仓库">
+                      <el-input v-model="form.warehouse" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="6">
+                    <el-form-item label="备注">
+                      <el-input v-model="form.remark" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </el-collapse-item>
+            </el-collapse>
           </el-form>
         </el-scrollbar>
       </div>
@@ -476,218 +609,169 @@
 
 <script>
 import myfilters from '@/components/myfilters'
+import myPagination from '@/components/MyPagination'
+import api from '@/api'
+import APIconfig from '@/api/APIconfig'
+import { getToken } from '@/utils/auth'
+const fileURL = api.fileURL
 
 export default {
-  components: { myfilters },
-  props: {
-    title: {
-      type: String,
-      default: '基本物资管理'
-    }
-  },
+  components: { myfilters, myPagination },
+  inject: ['reload'],
   data() {
     return {
+      action: fileURL,
+      activeNames: [],
+      listLoading: false,
+      rules: {
+        effctiveRange: [
+          { required: true, message: '请选择有效范围', trigger: 'blur' }
+        ],
+        financialAuditFlag: [
+          { required: true, message: '请选择财务审核标记', trigger: 'blur' }
+        ],
+        itemCode: [
+          { required: true, message: '请输入物品编码', trigger: 'blur' }
+        ],
+        largePackUnit: [
+          { required: true, message: '请选择大包装单位', trigger: 'blur' }
+        ],
+        manufacturer: [
+          { required: true, message: '请选择生产厂家', trigger: 'blur' }
+        ],
+        markupRole: [
+          { required: true, message: '请选择加价规则', trigger: 'blur' }
+        ],
+        miniFareCode: [
+          { required: true, message: '请输入最小费用代码', trigger: 'blur' }
+        ],
+        miniUnit: [
+          { required: true, message: '请选择最小单位', trigger: 'blur' }
+        ],
+        name: [{ required: true, message: '请输入物品名称', trigger: 'blur' }],
+        packFlag: [
+          { required: true, message: '请选择是否打包', trigger: 'blur' }
+        ],
+        spec: [{ required: true, message: '请选择物品规格', trigger: 'blur' }],
+        specialConsumableMark: [
+          { required: true, message: '请选择特殊耗材标志', trigger: 'blur' }
+        ],
+        stopFlag: [
+          { required: true, message: '请选择停用标记', trigger: 'blur' }
+        ],
+        supplyCompany: [
+          { required: true, message: '请选择供货公司', trigger: 'blur' }
+        ]
+      },
       imgShow: false,
       show: false,
       edit: false,
       editIndex: 0,
       dialogVisible: false,
-      listObj: {},
       fileList: [],
-      color: {
-        type: String,
-        default: '#1890ff'
-      },
-      url: require('@/assets/images/jiazi.png'),
       srcList: [],
-      tableData: [
-        {
-          standard: '把',
-          supplyCompany: '广州科密电子科技有效公司 ',
-          unitPrice: '5 ',
-          warehouse: '消毒区仓库',
-          whetherPack: '是',
-          wubingWriting: 'VB ',
-          url: require('@/assets/images/jiazi.png'),
-          srcList: [
-            require('@/assets/images/jiazi.png')
-          ],
-          alias: '刀子',
-          aliasCustomCode: 'dz',
-          aliasWubiCode: 'dz',
-          aliaspinyinCode: 'daozi',
-          application: '',
-          approvalInformation: '',
-          chargeSign: '不收费',
-          classification: '84',
-          classificationCode: '087',
-          comeFrom: '',
-          consumables: '',
-          countryCode: 'jd',
-          customCode: 'jd',
-          dateExpiry: '2022-04-20',
-          deactivateTag: '是',
-          effectiveDepartment: '',
-          effectiveRange: '供应室',
-          financialAuditMark: '是',
-          itemCode: '0003223',
-          itemName: '剪刀',
-          manufacturer: '',
-          markupRules: '不加价',
-          materialMark: '是',
-          minimumCode: 'gds',
-          operator: '',
-          operatorData: '2020-04-06',
-          pinyinWriting: 'jiandao',
-          producer: '',
-          rargePackage: '5',
-          rargePackageNum: '',
-          rargePackagePrice: '',
-          registrationDate: '2020-06-20',
-          registrationNum: 'jd123',
-          retailPrice: '5',
-          smallestUnit: '支',
-          specialCategory: '分类1'
-
-        },
-        {
-          itemCode: '0003221',
-          url: 'https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=1431818232,2863263451&fm=26&gp=0.jpg',
-          srcList: [
-            'https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=1431818232,2863263451&fm=26&gp=0.jpg'
-          ],
-          warehouse: '消毒区仓库',
-          itemName: '叉具',
-          pinyinWriting: 'chaju',
-          alias: ' 叉子',
-          aliaspinyinCode: ' chazi',
-          aliasCustomCode: 'dz',
-          aliasWubiCode: 'dz',
-          application: '',
-          approvalInformation: '',
-          chargeSign: '不收费',
-          classification: '84',
-          classificationCode: '087',
-          comeFrom: '',
-          consumables: '',
-          countryCode: 'jd',
-          customCode: 'jd',
-          dateExpiry: '2022-04-20',
-          deactivateTag: '是',
-          effectiveDepartment: '',
-          effectiveRange: '供应室',
-          financialAuditMark: '是',
-          manufacturer: '',
-          markupRules: '不加价',
-          materialMark: '是',
-          minimumCode: 'gds',
-          operator: '',
-          operatorData: '2020-04-06',
-          producer: '',
-          rargePackage: '5',
-          rargePackageNum: '',
-          rargePackagePrice: '',
-          registrationDate: '2020-06-20',
-          registrationNum: 'jd123',
-          retailPrice: '5',
-          smallestUnit: '支',
-          specialCategory: '分类1',
-          standard: '把',
-          supplyCompany: '广州科密电子科技有效公司 ',
-          unitPrice: '5 ',
-          whetherPack: '是',
-          wubingWriting: 'VB'
-        },
-        {
-          itemCode: '0003225',
-          url: require('@/assets/images/qianzi.png'),
-          srcList: [
-            require('@/assets/images/qianzi.png')
-          ],
-          warehouse: '消毒区仓库',
-          itemName: '钳具',
-          pinyinWriting: 'qianju',
-          alias: '钳子',
-          aliaspinyinCode: 'qianzi',
-          aliasCustomCode: 'dz',
-          aliasWubiCode: 'dz',
-          application: '',
-          approvalInformation: '',
-          chargeSign: '不收费',
-          classification: '84',
-          classificationCode: '087',
-          comeFrom: '',
-          consumables: '',
-          countryCode: 'jd',
-          customCode: 'jd',
-          dateExpiry: '2022-04-20',
-          deactivateTag: '是',
-          effectiveDepartment: '',
-          effectiveRange: '供应室',
-          financialAuditMark: '是',
-          manufacturer: '',
-          markupRules: '不加价',
-          materialMark: '是',
-          minimumCode: 'gds',
-          operator: '',
-          operatorData: '2020-04-06',
-          producer: '',
-          rargePackage: '5',
-          rargePackageNum: '',
-          rargePackagePrice: '',
-          registrationDate: '2020-06-20',
-          registrationNum: 'jd123',
-          retailPrice: '5',
-          smallestUnit: '支',
-          specialCategory: '分类1',
-          standard: '把',
-          supplyCompany: '广州科密电子科技有效公司 ',
-          unitPrice: '5 ',
-          whetherPack: '是',
-          wubingWriting: 'VB'
-        }],
-      multipleSelection: [],
-      form: {
-        itemName: '',
-        warehouse: '',
-        effectiveRange: '',
-        standard: '',
-        smallestUnit: '',
-        unitPrice: '',
-        materialMark: '',
-        whetherPack: '',
-        operator: '',
-        operatorData: '',
-        mark: '',
-        pinyinWriting: '',
-        wubingWriting: '',
-        customCode: '',
-        countryCode: '',
-        alias: '',
-        aliaspinyinCode: '',
-        aliasWubiCode: '',
-        aliasCustomCode: '',
-        retailPrice: '',
-        rargePackage: '',
-        markupRules: '',
-        minimumCode: '',
-        chargeSign: '',
-        deactivateTag: '',
-        manufacturer: '',
-        supplyCompany: '',
-        comeFrom: '',
-        application: '',
-        approvalInformation: '',
-        producer: '',
-        registrationNum: '',
-        specialCategory: '',
-        registrationDate: '',
-        dateExpiry: '',
-        financialAuditMark: ''
+      tableData: [],
+      form: {},
+      oldForm: {},
+      ssd_common_boolean: null,
+      ssd_effective_range: null,
+      ssd_markup_role: null,
+      ssd_measure_unit: null,
+      ssd_specification: null,
+      companyOptions: [],
+      factoryOptions: [],
+      loading: false,
+      totalCount: 0,
+      conditions: {
+        itemType: null
       }
     }
   },
+  computed: {
+    title() {
+      return this.$route.query.name
+        ? this.$route.query.name + '物资管理'
+        : '基础物资管理'
+    },
+    token() {
+      const token = getToken()
+      return `Bearer ${token}`
+    }
+  },
+  watch: {
+    '$route.query.id': {
+      handler(val) {
+        this.conditions.itemType = val
+        this.listLoading = true
+        api.toconsuppliesPage({ itemType: val }).then(response => {
+          // console.log(response)
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.totalCount = response.data.totalCount
+            this.tableData = response.data.records
+            this.listLoading = false
+          }
+        })
+      }
+    }
+  },
+  created() {
+    this.fetchData()
+  },
   methods: {
+    fetchData() {
+      this.conditions.itemType = this.$route.query.id
+      this.listLoading = true
+      api
+        .toconsuppliesPage({ itemType: this.$route.query.id })
+        .then(response => {
+          // console.log(response)
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.ssd_common_boolean = response.data.dictData.ssd_common_boolean
+            this.ssd_effective_range = response.data.dictData.ssd_effective_range
+            this.ssd_markup_role = response.data.dictData.ssd_markup_role
+            this.ssd_measure_unit = response.data.dictData.ssd_measure_unit
+            this.ssd_specification = response.data.dictData.ssd_specification
+            if (this.$route.query.id) {
+              this.tableData = response.data.records
+              this.totalCount = response.data.totalCount
+            }
+            this.listLoading = false
+          }
+        })
+    },
+    remoteMethodFactory(query) {
+      if (query !== '') {
+        this.loading = true
+        api.toCompanyPage({ name: query }).then(response => {
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.factoryOptions = response.data.records
+            this.loading = false
+          }
+        })
+      } else {
+        this.factoryOptions = []
+      }
+    },
+    remoteMethodCompany(query) {
+      if (query !== '') {
+        this.loading = true
+        api.toCompanyPage({ name: query }).then(response => {
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.companyOptions = response.data.records
+            this.loading = false
+          }
+        })
+      } else {
+        this.companyOptions = []
+      }
+    },
+    selectChange(select, str, options) {
+      // console.log(select, str)
+      const obj = this[options].find(item => {
+        return item.name === select
+      })
+      this.form[str] = obj.id
+    },
     // 操作下拉点击
     handleCommand({ index, row, action }) {
       this[action](index, row)
@@ -696,111 +780,127 @@ export default {
     viewerClose() {
       this.imgShow = false
     },
-    // 图片查看器开启
-    handleImage(src) {
+    imgSrc(imageInfo) {
+      return `${APIconfig.baseUrl}/${imageInfo}`
+    },
+    imgClick(index, row) {
+      this.srcList = []
+      row.images.forEach(item => {
+        this.srcList.push(this.imgSrc(item.url))
+      })
       this.imgShow = true
-      this.srcList = src
     },
     // 上传
-    handleUpload() {
+    handleUpload(index, row) {
+      this.form = {
+        busiId: row.id,
+        busiType: '1'
+      }
+      this.fileList = []
+      if (row.images) {
+        row.images.forEach((item, index) => {
+          const img = {
+            uid: item.id,
+            url: this.imgSrc(item.url)
+          }
+          this.fileList.push(img)
+        })
+      }
       this.dialogVisible = true
-    },
-    // 查看所有图片是否上传完毕
-    checkAllSuccess() {
-      return Object.keys(this.listObj).every(item => this.listObj[item].hasSuccess)
     },
     // 上传按钮
     handleSubmit() {
-      const arr = Object.keys(this.listObj).map(v => this.listObj[v])
-      if (!this.checkAllSuccess()) {
-        this.$message({
-          message: '请等待所有图片上传完毕',
-          type: 'warning'
-        })
-        return
-      }
-      this.$emit('successCBK', arr)
-      this.listObj = {}
-      this.fileList = []
+      this.reload()
       this.dialogVisible = false
     },
     // 上传成功
     handleSuccess(response, file) {
-      const uid = file.uid
-      const objKeyArr = Object.keys(this.listObj)
-      for (let i = 0, len = objKeyArr.length; i < len; i++) {
-        if (this.listObj[objKeyArr[i]].uid === uid) {
-          this.listObj[objKeyArr[i]].url = response.files.file
-          this.listObj[objKeyArr[i]].hasSuccess = true
-          return
-        }
+      if (!response.success) {
+        return this.$message.error(response.errMsg)
       }
+      this.form.imageInfo = response.resData[0].filePath
+      api.toPostImage(this.form).then(res => {
+        file.uid = res.data.id
+        if (res.code === '200' && res.data.busiCode === '1') {
+          // this.fileList.push(res.data)
+          this.$message({
+            message: '上传成功',
+            type: 'success'
+          })
+        }
+      })
     },
     // 移除上传内容
     handleRemove(file) {
-      const uid = file.uid
-      const objKeyArr = Object.keys(this.listObj)
-      for (let i = 0, len = objKeyArr.length; i < len; i++) {
-        if (this.listObj[objKeyArr[i]].uid === uid) {
-          delete this.listObj[objKeyArr[i]]
-          return
+      api.deleteImage({ id: file.uid }).then(res => {
+        if (res.code === '200' && res.data.busiCode === '1') {
+          // const i = this.fileList.findIndex(val => {
+          //   return val === file
+          // })
+          // this.fileList.splice(i, 1)
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
         }
-      }
+      })
     },
     // 上传的动作
     beforeUpload(file) {
-      const _self = this
-      const _URL = window.URL || window.webkitURL
-      const fileName = file.uid
-      this.listObj[fileName] = {}
-      return new Promise((resolve, reject) => {
-        const img = new Image()
-        img.src = _URL.createObjectURL(file)
-        img.onload = function() {
-          _self.listObj[fileName] = { hasSuccess: false, uid: file.uid, width: this.width, height: this.height }
-        }
-        resolve(true)
-      })
+      const typeCheck = file.type === 'image/jpeg' || file.type === 'image/png'
+      if (!typeCheck) {
+        this.$message.error('上传图片只支持 JPG 或PNG 格式!')
+        return new Promise((resolve, reject) => {
+          reject(false)
+        })
+      }
     },
     // 新增
     addClick() {
       this.edit = false
       this.form = {
-        name: '',
-        jobNum: '',
-        hierarchy: ''
+        itemType: this.$route.query.id
       }
       this.show = true
     },
     // 新增弹窗确认按钮
     addSubmit() {
-      this.$refs.form.validate((valid) => {
+      this.$refs.form.validate(async valid => {
         if (valid) {
-          this.$message({
-            message: '添加成功',
-            type: 'success'
+          api.toAddsuppliesl(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.reload()
+              this.$message({
+                message: '添加成功',
+                type: 'success'
+              })
+            }
           })
-          this.tableData.push(this.form)
           this.show = false
-        } else {
-          this.$message({
-            message: '请按要求填写',
-            type: 'warning'
-          })
         }
       })
     },
     // 编辑弹窗确认
     editSubmit() {
-      this.$refs.form.validate((valid) => {
+      if (JSON.stringify(this.form) === JSON.stringify(this.oldForm)) {
+        this.$message('无信息修改')
+        this.show = false
+        return
+      }
+      this.$refs.form.validate(async valid => {
         if (valid) {
-          this.$message({
-            message: '修改成功',
-            type: 'success'
+          api.toRevisupplies(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.reload()
+              this.$message({
+                message: '修改成功',
+                type: 'success'
+              })
+            }
           })
-          this.tableData.splice(this.editIndex, 1, this.form)
           this.show = false
-          this.edit = false
         } else {
           this.$message({
             message: '请按要求填写',
@@ -812,17 +912,36 @@ export default {
     // 编辑
     handleEdit(index, row) {
       this.form = JSON.parse(JSON.stringify(row))
+      this.oldForm = JSON.parse(JSON.stringify(row))
       this.edit = true
       this.editIndex = index
       this.show = true
     },
     // 删除
     handleDelete(index, row) {
-      this.$message({
-        message: '删除成功',
-        type: 'success'
+      api.toDeletesupplies(row).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData.splice(index, 1)
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
+        }
       })
-      this.tableData.splice(index, 1)
+    },
+    contentChange(content) {
+      this.$set(this.conditions, 'keyword', content)
+      this.$set(this.conditions, 'pageNo', 1)
+      this.listLoading = true
+      api
+        .toconsuppliesPage(this.conditions)
+        .then(response => {
+          // console.log(response)
+          this.tableData = response.data.records
+          this.totalCount = response.data.totalCount
+          this.listLoading = false
+        })
     }
   }
 }
@@ -843,6 +962,7 @@ export default {
 }
 .goods-main {
   padding: 0;
+  min-height: 583px;
 }
 .img-main {
   padding-bottom: 30px;
@@ -850,5 +970,45 @@ export default {
 .scrollbar-form {
   padding-top: 20px;
   padding-bottom: 0;
+}
+::v-deep .el-collapse {
+  border: 0;
+}
+::v-deep .el-collapse-item {
+  position: relative;
+  .el-collapse-item__header {
+    font-size: 14px;
+    color: rgba(153, 153, 153, 1);
+    line-height: 24px;
+    height: 24px;
+    padding-left: 30px;
+    border-bottom: 0;
+    margin-bottom: 20px;
+  }
+  .el-collapse-item__arrow {
+    position: absolute;
+    top: 6px;
+    left: 10px;
+    font-size: 14px;
+    transform: rotate(-90deg);
+  }
+  .el-collapse-item__arrow.is-active {
+    transform: rotate(90deg);
+  }
+  .el-collapse-item__wrap {
+    border-bottom: 0;
+  }
+}
+::v-deep .scrollbarHidden .el-scrollbar__bar {
+  display: none;
+}
+::v-deep {
+  .is-uploading,
+  .is-ready,
+  .el-list-leave,
+  .el-list-enter,
+  .el-list-leave-active{
+    display: none;
+  }
 }
 </style>

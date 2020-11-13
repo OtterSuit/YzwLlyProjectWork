@@ -6,7 +6,6 @@
       :content="content"
       :choose-date="true"
       :choose-cleaning-box="true"
-      format="yyyy.MM.dd"
       placeholder="编码/回收人"
       :search-content="true"
       @contentChange="contentChange"
@@ -15,47 +14,71 @@
     />
     <!-- 头部 end -->
     <!-- table -->
-    <el-table :data="tableData" style="width: 100%">
+    <el-table
+      v-loading="listLoading"
+      :data="tableData"
+      style="width: 100%"
+    >
       <el-table-column label="序号" type="index" width="100" />
-      <el-table-column prop="cleaningBox" label="清洗框/架" />
-      <el-table-column prop="code" label="编码" />
-      <el-table-column prop="person" label="回收人" />
-      <el-table-column prop="time" label="回收时间" width="180" />
+      <el-table-column prop="id" label="编码" />
+      <el-table-column label="清洗框/架">
+        <template slot-scope="scope">
+          <div>
+            {{ scope.row.cleanboxName }}
+          </div>
+          <div>
+            {{ scope.row.cleanboxNum }}
+          </div>
+        </template>
+      </el-table-column>
+      <el-table-column prop="lastUser" label="回收人" />
+      <el-table-column prop="lastTime" label="回收时间" width="180" />
       <el-table-column label="状态">
         <template slot-scope="scope">
-          <div :class="stateColor(scope.row.state)">
-            <i :class="stateIcon(scope.row.state)" />
-            {{ state(scope.row.state) }}
+          <div v-if="ssd_clean_task_status" :class="stateColor(scope.row.status)">
+            <i :class="stateIcon(scope.row.status)" />
+            {{ ssd_clean_task_status[scope.row.status] }}
           </div>
         </template>
       </el-table-column>
       <el-table-column align="right">
         <template slot-scope="scope">
           <el-button
+            v-if="scope.row.status==='1'"
             slot="reference"
             size="mini"
             type="primary"
+            :loading="buttonLoading"
             @click="handleShow(scope.$index, scope.row)"
-          >清洗</el-button>
+          >开始清洗</el-button>
+          <el-button
+            v-if="scope.row.status==='2'"
+            slot="reference"
+            size="mini"
+            type="primary"
+            :loading="buttonLoading"
+            @click="handleCompeted(scope.$index, scope.row)"
+          >清洗完成</el-button>
         </template>
       </el-table-column>
     </el-table>
     <!-- table end -->
+    <my-pagination :total="totalCount" methods="getCleanTask" :conditions="conditions" :records="['data','page','records']" />
     <!-- 弹窗 -->
     <el-dialog v-el-drag-dialog title="清洗消毒" :visible.sync="show" width="800px">
       <div class="dialog-main">
-        <div class="dialog-cleaningBox dialog-content">{{ tableData[editIndex].cleaningBox }}</div>
-        <div class="dialog-code dialog-content">{{ tableData[editIndex].code }}</div>
+        <div class="dialog-cleaningBox dialog-content">{{ tableData[editIndex]?tableData[editIndex].name: '' }}</div>
+        <div class="dialog-code dialog-content">{{ tableData[editIndex]?tableData[editIndex].code: '' }}</div>
         <el-form ref="form" :model="form" label-width="70px" :rules="rules">
           <el-row type="flex" justify="space-between">
             <el-col :span="18" :offset="3">
-              <el-form-item label="清洗设备" prop="cleaningEquipment">
-                <el-select v-model="form.cleaningEquipment" placeholder>
+              <el-form-item label="清洗设备" prop="cleanEquipmentId">
+                <el-select v-model="form.cleanEquipmentId" placeholder>
                   <el-option
-                    v-for="item in cleaningEquipment"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
+                    v-for="(val, key) in CLEAN_POT"
+                    :key="val"
+                    :label="val"
+                    :value="key"
                   />
                 </el-select>
               </el-form-item>
@@ -63,13 +86,13 @@
           </el-row>
           <el-row type="flex" justify="space-between">
             <el-col :span="18" :offset="3">
-              <el-form-item label="清洗程序" prop="cleaningProgram">
-                <el-select v-model="form.cleaningProgram" placeholder>
+              <el-form-item label="清洗程序" prop="cleanProgramId">
+                <el-select v-model="form.cleanProgramId" placeholder>
                   <el-option
-                    v-for="item in cleaningProgram"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.value"
+                    v-for="(val, key) in CLEAN_PROGRAM"
+                    :key="val"
+                    :label="val"
+                    :value="key"
                   />
                 </el-select>
               </el-form-item>
@@ -88,82 +111,92 @@
 
 <script>
 import myfilters from '@/components/myfilters'
+import myPagination from '@/components/MyPagination'
+import api from '@/api'
 export default {
   components: {
-    myfilters
+    myfilters, myPagination
   },
   data() {
     return {
-      form: {
-        cleaningEquipment: '',
-        cleaningProgram: ''
-      },
+      form: {},
+      row: '',
+      listLoading: true,
+      buttonLoading: false,
       rules: {
-        cleaningEquipment: [
-          { required: true, message: '请选择清洗设备', trigger: 'blur' }
+        cleanEquipmentId: [
+          { required: true, message: '请选择清洗设备', trigger: ['blur', 'change'] }
         ],
-        cleaningProgram: [
-          { required: true, message: '请选择清洗程序', trigger: 'blur' }
+        cleanProgramId: [
+          { required: true, message: '请选择清洗程序', trigger: ['blur', 'change'] }
         ]
       },
       editIndex: 0,
       show: false,
-      type: '清洗框/架',
-      cleaningEquipment: [
-        {
-          value: '清洗机01',
-          label: '清洗机01'
-        },
-        {
-          value: '清洗机02',
-          label: '清洗机02'
-        }
-      ],
-      cleaningProgram: [
-        {
-          value: '清洗程序112',
-          label: '清洗程序112'
-        },
-        {
-          value: '清洗程序113',
-          label: '清洗程序113'
-        }
-      ],
-      tableData: [
-        {
-          cleaningBox: '架01',
-          code: 'MJJ001',
-          person: '赵美丽',
-          time: '2020.08.10 09:45:32',
-          state: '2'
-        },
-        {
-          cleaningBox: '架02',
-          code: 'MJJ002',
-          person: '赵美丽',
-          time: '2020.08.10 16:34:54',
-          state: '2'
-        }
-      ]
+      tableData: [],
+      ssd_clean_task_status: null,
+      CLEAN_PROGRAM: null,
+      CLEAN_POT: null,
+      totalCount: 0,
+      conditions: {
+        statuses: [1, 2],
+        cleanboxId: null,
+        lastTimeOneDay: null,
+        keyword: null
+      }
     }
   },
   computed: {
     // 计算tableData有几条数据
     content() {
-      return '共' + this.tableData.length + '条数据'
+      return '共' + this.totalCount + '条数据'
     }
   },
+  inject: ['reload'],
+  created() {
+    this.fetchData()
+  },
   methods: {
+    fetchData() {
+      this.listLoading = true
+      api.getCleanTask({ statuses: [1, 2] }).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.ssd_clean_task_status = response.data.dictData.ssd_clean_task_status
+          this.tableData = response.data.page.records
+          this.totalCount = response.data.page.totalCount
+          this.listLoading = false
+        }
+      })
+      api.toconstanttypeBatch({
+        constantCodes: [
+          'CLEAN_PROGRAM',
+          'CLEAN_POT'
+        ]
+      }).then(response => {
+        this.CLEAN_PROGRAM = response.data.constantsDetail.CLEAN_PROGRAM
+        this.CLEAN_POT = response.data.constantsDetail.CLEAN_POT
+      })
+    },
     // 清洗弹窗确认按钮
     cleanSubmit() {
-      this.$refs.form.validate((valid) => {
+      this.$refs.form.validate(async valid => {
         if (valid) {
-          this.$message({
-            message: '清洗成功',
-            type: 'success'
+          api.toStartClean(this.form).then(response => {
+            // console.log(response)
+            this.buttonLoading = true
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.$message({
+                message: '开始清洗',
+                type: 'success'
+              })
+              // console.log(this.row)
+              this.row.status = '2'
+              this.reload()
+            }
+            this.buttonLoading = false
           })
           this.show = false
-          this.tableData[this.editIndex].state = '1'
         } else {
           this.$message({
             message: '请按要求填写',
@@ -175,43 +208,76 @@ export default {
     // 表格右侧清洗按钮
     handleShow(index, row) {
       this.editIndex = index
+      this.row = row
+      this.form = {
+        cleanTaskId: row.cleanTaskId,
+        cleanboxId: row.cleanboxId,
+        id: row.id,
+        cleanProgramId: null,
+        cleanEquipmentId: null
+      }
       this.show = true
+    },
+    handleCompeted(index, row) {
+      api.toEndClean({ id: row.id }).then(response => {
+        // console.log(response)
+        this.buttonLoading = true
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.$message({
+            message: '清洗完成',
+            type: 'success'
+          })
+          this.tableData.splice(index, 1)
+          this.reload()
+        }
+        this.buttonLoading = false
+      })
     },
     // 状态标签文字
     state(state) {
-      const stateMap = {
-        '1': '已清洗',
-        '2': '等待清洗'
-      }
-      return stateMap[state]
+      return this.ssd_clean_task_status[state]
     },
     // 状态的icon
     stateIcon(state) {
       const stateMap = {
-        '1': 'el-icon-success',
-        '2': 'el-icon-time'
+        '1': 'el-icon-time',
+        '2': 'el-icon-success'
       }
       return stateMap[state]
     },
     // 状态颜色
     stateColor(state) {
       const stateMap = {
-        '1': 'success-color',
-        '2': 'base-color'
+        '1': 'base-color',
+        '2': 'success-color'
       }
       return stateMap[state]
     },
     // 输入框改变
     contentChange(content) {
-      console.log(content)
+      this.$set(this.conditions, 'keyword', content)
+      this.selectChange()
     },
     // 时间改变
     dateChange(date) {
-      console.log(date)
+      this.$set(this.conditions, 'lastTimeOneDay', date)
+      this.selectChange()
     },
     // 清洗框改变
     cleaningBoxChange(cleaningBox) {
-      console.log(cleaningBox)
+      this.$set(this.conditions, 'cleanboxId', cleaningBox)
+      this.selectChange()
+    },
+    selectChange() {
+      this.$set(this.conditions, 'pageNo', 1)
+      this.listLoading = true
+      api.getCleanTask(this.conditions).then(response => {
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData = response.data.page.records
+          this.totalCount = response.data.page.totalCount
+          this.listLoading = false
+        }
+      })
     }
   }
 }
@@ -238,9 +304,5 @@ export default {
 }
 .dialog-main {
   height: 420px;
-}
-::v-deep .el-form-item.is-required:not(.is-no-asterisk) .el-form-item__label-wrap>.el-form-item__label:before,
-::v-deep .el-form-item.is-required:not(.is-no-asterisk)>.el-form-item__label:before {
-  display: none;
 }
 </style>

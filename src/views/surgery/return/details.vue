@@ -1,7 +1,7 @@
 <template>
   <div class="apply-contaniner">
     <myfilters
-      title="退货申请单"
+      title="退回申请单"
       content="NO.0033124"
       :back-button="true"
       style="margin-bottom:20px"
@@ -107,7 +107,7 @@ export default {
         orderNum: '10001',
         applyDepartment: '妇一科',
         applicant: '张美华',
-        state: '已发货，待签收',
+        state: '已发放，待签收',
         applyType: '器械包申请',
         applyNum: '30',
         applyTime: '2020.08.10 09:54:12'
@@ -194,9 +194,6 @@ export default {
 }
 ::v-deep .el-scrollbar__wrap {
   overflow-x: hidden;
-}
-::v-deep .hidden-table .el-table__body-wrapper {
-  display: none;
 }
 ::v-deep .hidden-radio .el-radio__label {
   display: none;

@@ -11,7 +11,6 @@
         <myfilters
           ref="applyFilters"
           title="回收清单"
-          add-icon="el-icon-circle-plus-outline"
           addifo="添加"
           placeholder="器械包名称/编号"
           :search-content="true"

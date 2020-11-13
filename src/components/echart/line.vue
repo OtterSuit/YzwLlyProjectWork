@@ -9,6 +9,8 @@
 <script>
 // import elementResizeDetectorMaker from 'element-resize-detector'
 import resize from './mixins/resize'
+import 'echarts/lib/chart/line'
+import 'echarts/lib/chart/bar'
 export default {
   mixins: [resize],
   props: {
@@ -103,7 +105,7 @@ export default {
         return {
           type: 'value',
           minInterval: 5,
-          min: 1,
+          min: 0,
           axisTick: {
             show: false
           },

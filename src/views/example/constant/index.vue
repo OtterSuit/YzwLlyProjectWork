@@ -7,27 +7,31 @@
       :add-button="true"
       :search-content="true"
       placeholder="类别名称"
-      addifo="新增"
-      add-icon="el-icon-circle-plus-outline"
       @addClick="addClick"
+      @contentChange="contentChange"
     />
     <!-- 头部end -->
     <!-- table -->
     <el-table
+      v-loading="listLoading"
       :data="tableData"
       style="width: 100%"
     >
+      <!-- <el-table-column
+        prop="code"
+        label="类别编号"
+      /> -->
       <el-table-column
-        prop="classify"
+        prop="name"
         label="类别名称"
       />
       <el-table-column label="有效性">
         <template slot-scope="scope">
-          <span>{{ scope.row.effective ? '✔' : '✖' }}</span>
+          <span>{{ ssd_common_boolean[scope.row.validFlag] }}</span>
         </template>
       </el-table-column>
       <el-table-column
-        prop="describe"
+        prop="remark"
         label="描述"
       />
       <el-table-column width="220">
@@ -35,7 +39,7 @@
           <el-button
             size="mini"
             style="margin-right:5px"
-            @click="handleDetails(scope.$index, scope.row, 'mbox')"
+            @click="handleDetails(scope.$index, scope.row)"
           >
             <i class="el-icon-tickets" /> 查看常数
           </el-button>
@@ -71,29 +75,35 @@
       </el-table-column>
     </el-table>
     <!-- table end -->
+    <my-pagination :total="totalCount" methods="toconstanttypePage" :conditions="conditions" />
     <!-- 常数类别新增编辑弹窗 -->
     <el-dialog v-el-drag-dialog title="分类信息" :visible.sync="show" width="800px">
       <div class="dialog-main">
-        <el-form ref="form" :model="form" label-width="80px">
+        <el-form ref="form" :model="form" label-width="80px" :rules="rules">
           <el-row type="flex" justify="space-between">
-            <el-col :span="11">
-              <el-form-item label="分类级别">
-                <el-input v-model="form.classify" />
+            <el-col :span="9">
+              <el-form-item label="类别编号" prop="name">
+                <el-input v-model="form.code" />
               </el-form-item>
             </el-col>
-            <el-col :span="11">
-              <el-form-item label="有效性">
-                <el-radio-group v-model="form.effective">
-                  <el-radio :label="true">有效</el-radio>
-                  <el-radio :label="false">无效</el-radio>
-                </el-radio-group>
+            <el-col :span="13">
+              <el-form-item label="类别名称" prop="name">
+                <el-input v-model="form.name" />
               </el-form-item>
             </el-col>
           </el-row>
-          <el-row type="flex">
-            <el-col :span="24">
+          <el-row type="flex" justify="space-between">
+            <el-col :span="9">
+              <el-form-item label="有效性" prop="validFlag">
+                <el-radio-group v-model="form.validFlag">
+                  <el-radio :label="1">是</el-radio>
+                  <el-radio :label="0">否</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+            <el-col :span="13">
               <el-form-item label="描述">
-                <el-input v-model="form.describe" />
+                <el-input v-model="form.remark" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -110,143 +120,120 @@
 
 <script>
 import myfilters from '@/components/myfilters'
+import myPagination from '@/components/MyPagination'
+import api from '@/api'
 export default {
   components: {
-    myfilters
+    myfilters, myPagination
   },
   data() {
     return {
+      listLoading: true,
+      rules: {
+        name: [
+          { required: true, message: '请输入类别名称', trigger: 'blur' }
+        ],
+        validFlag: [
+          { required: true, message: '请选择有效性', trigger: 'blur' }
+        ]
+      },
       content: '',
       show: false,
       edit: false,
       editIndex: 0,
-      tableData: [
-        {
-          classify: '清洗程序',
-          describe: '',
-          effective: true
-        }, {
-          classify: '清洗标记',
-          describe: '',
-          effective: true
-        }, {
-          classify: '灭菌方法',
-          describe: '',
-          effective: true
-        }, {
-          classify: '灭菌程序',
-          describe: '',
-          effective: true
-        }, {
-          classify: '灭菌锅',
-          describe: '',
-          effective: true
-        }, {
-          classify: '清洗架',
-          describe: '',
-          effective: true
-        }, {
-          classify: '清洗锅',
-          describe: '',
-          effective: true
-        }, {
-          classify: '灭菌架',
-          describe: '',
-          effective: true
-        }, {
-          classify: '灭菌框',
-          describe: '',
-          effective: true
-        }, {
-          classify: '条码类型',
-          describe: '',
-          effective: true
-        }, {
-          classify: '有效期',
-          describe: '',
-          effective: true
-        }, {
-          classify: '包装材料',
-          describe: '',
-          effective: true
-        }, {
-          classify: '回收类型',
-          describe: '',
-          effective: true
-        }, {
-          classify: '机洗时间',
-          describe: '',
-          effective: true
-        }, {
-          classify: '消毒时间',
-          describe: '',
-          effective: true
-        }, {
-          classify: '消毒浓度',
-          describe: '',
-          effective: true
-        }
-      ],
-      form: {
-        classify: '',
-        describe: '',
-        effective: ''
-      },
+      tableData: [],
+      form: {},
       oldForm: null,
-      select: {
-        department: '',
-        time: null
-      },
-      title: ''
+      ssd_common_boolean: null,
+      totalCount: 0,
+      conditions: {}
     }
   },
-  // created() {
-  //   this.fetchData()
-  // },
+  created() {
+    this.fetchData()
+  },
   methods: {
+    fetchData() {
+      this.listLoading = true
+      api.toconstanttypePage().then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.totalCount = response.data.totalCount
+          this.ssd_common_boolean = response.data.dictData.ssd_common_boolean
+          this.tableData = response.data.records
+          this.listLoading = false
+        }
+      })
+    },
     // 操作下拉点击
     handleCommand({ index, row, action }) {
       this[action](index, row)
     },
     // 查看常数按钮
-    handleDetails(index, row, box) {
-      this.title = row.classify + '常数维护'
+    handleDetails(index, row) {
       this.$router.push({
         name: 'constantDetails',
-        params: { title: this.title }
+        query: {
+          id: row.id,
+          title: row.name
+        }
       })
     },
     // 新增按钮
     addClick() {
       this.edit = false
-      this.form = {
-        classify: '',
-        describe: '',
-        effectiveness: ''
-      }
+      this.form = {}
       this.show = true
     },
     // 新增弹窗确认按钮
     addSubmit() {
-      this.$message({
-        message: '添加成功',
-        type: 'success'
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toAddconstanttype(this.form).then(response => {
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.tableData.push(response.data)
+              this.$message({
+                message: '添加成功',
+                type: 'success'
+              })
+            }
+          })
+          this.show = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
-      this.tableData.push(this.form)
-      this.show = false
     },
     // 编辑弹窗确认按钮
     editSubmit() {
-      this.show = false
       if (JSON.stringify(this.form) === JSON.stringify(this.oldForm)) {
         this.$message('无信息修改')
+        this.show = false
         return
       }
-      this.$message({
-        message: '修改成功',
-        type: 'success'
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toReviseconstanttype(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.tableData.splice(this.editIndex, 1, response.data)
+              this.$message({
+                message: '修改成功',
+                type: 'success'
+              })
+            }
+          })
+          this.show = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
-      this.tableData.splice(this.editIndex, 1, this.form)
     },
     // 编辑
     handleEdit(index, row) {
@@ -258,11 +245,31 @@ export default {
     },
     // 删除
     handleDelete(index, row) {
-      this.$message({
-        message: '删除成功',
-        type: 'success'
+      api.toDeleteconstanttype(row).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData.splice(index, 1)
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
+        }
       })
-      this.tableData.splice(index, 1)
+    },
+    contentChange(content) {
+      this.$set(this.conditions, 'name', content)
+      this.$set(this.conditions, 'pageNo', 1)
+      this.listLoading = true
+      api
+        .toconstanttypePage(this.conditions)
+        .then(response => {
+          // console.log(response)
+          if (response.code === '200' && response.data.busiCode === '1') {
+            this.tableData = response.data.records
+            this.totalCount = response.data.totalCount
+            this.listLoading = false
+          }
+        })
     }
   }
 }

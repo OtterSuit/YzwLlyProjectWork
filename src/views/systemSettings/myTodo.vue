@@ -19,7 +19,6 @@
   </div>
 </template>
 <script>
-import { getTodo } from '@/api/systemSettings/todo'
 export default {
   data() {
     return {
@@ -27,14 +26,8 @@ export default {
     }
   },
   created() {
-    this.fetchData()
   },
   methods: {
-    fetchData() {
-      getTodo().then(response => {
-        this.todoList = response.data.items
-      })
-    }
   }
 }
 </script>

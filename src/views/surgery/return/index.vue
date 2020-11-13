@@ -2,23 +2,21 @@
   <div style="padding:30px">
     <!-- 头部 -->
     <myfilters
-      title="退货管理"
+      title="退回管理"
       :content="content"
       placeholder="申请人/订单编号"
       :choose-date="true"
       :add-button="true"
+      :choose-type="true"
       :choose-status="true"
-      :choose-states="true"
-      add-icon="el-icon-circle-plus-outline"
-      addifo="退货申请"
+      addifo="退回申请"
+      :type-options="typeOptions"
       :status-options="statusOptions"
-      :states-options="statesOptions"
-      format="yyyy.MM.dd"
       :search-content="true"
       @contentChange="contentChange"
       @dateChange="dateChange"
+      @typeChange="typeChange"
       @statusChange="statusChange"
-      @statesChange="statesChange"
       @addClick="applyClick"
     />
     <!-- 头部 end -->
@@ -71,7 +69,7 @@
                   row: scope.row,
                   action: 'handleGoods'
                 }"
-              >发货</el-dropdown-item>
+              >发放</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </template>
@@ -90,7 +88,7 @@ export default {
   },
   data() {
     return {
-      statesOptions: [
+      statusOptions: [
         {
           value: '全部状态',
           label: '全部状态'
@@ -100,16 +98,16 @@ export default {
           label: '已收获'
         },
         {
-          value: '已发货，待签收',
-          label: '已发货，待签收'
+          value: '已发放，待签收',
+          label: '已发放，待签收'
         },
         {
           value: '已申请，待审核',
           label: '已申请，待审核'
         },
         {
-          value: '已审核，待发货',
-          label: '已审核，待发货'
+          value: '已审核，待发放',
+          label: '已审核，待发放'
         },
         {
           value: '已取消',
@@ -120,7 +118,7 @@ export default {
           label: '已驳回'
         }
       ],
-      statusOptions: [
+      typeOptions: [
         {
           value: '全部类别',
           label: '全部类别'
@@ -235,21 +233,21 @@ export default {
     dateChange(date) {
       console.log(date)
     },
-    statusChange(status) {
+    typeChange(status) {
       console.log(status)
     },
-    statesChange(states) {
+    statusChange(states) {
       console.log(states)
     },
     // 状态标签文字
     state(state) {
       const stateMap = {
-        '1': '已发货，待签收',
+        '1': '已发放，待签收',
         '2': '已申请，待审核',
-        '3': '已审核，待发货',
+        '3': '已审核，待发放',
         '4': '已取消',
         '5': '已驳回',
-        '6': '已收货'
+        '6': '已回收'
       }
       return stateMap[state]
     },

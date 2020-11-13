@@ -3,36 +3,46 @@
     <div class="table" style="padding:30px">
       <!-- 头部 -->
       <myfilters
-        :title="title"
+        title="合同信息"
         :add-button="true"
         :back-button="true"
-        addifo="新增"
-        add-icon="el-icon-circle-plus-outline"
         @addClick="addClick"
       />
       <!-- 头部end -->
       <!-- table -->
       <el-table
+        v-loading="listLoading"
         :data="tableData"
         style="width: 100%"
       >
         <el-table-column label="缩略图" align="center">
-          <template>
+          <template slot-scope="scope">
             <img
+              v-if="scope.row.images"
               style="width: 70px;cursor:pointer"
-              :src="url"
-              @click="imgShow=true"
+              :src="imgSrc(scope.row.images[0].url)"
+              @click="imgClick(scope.$index,scope.row)"
             >
           </template>
         </el-table-column>
         <el-table-column
-          label="合同状态"
-          prop="status"
+          label="合同名称"
+          prop="contractName"
         />
         <el-table-column
+          label="合同状态"
+        >
+          <template slot-scope="scope">
+            {{ ssd_company_contract_status[scope.row.status] }}
+          </template>
+        </el-table-column>
+        <el-table-column
           label="合同类别"
-          prop="contractType"
-        />
+        >
+          <template slot-scope="scope">
+            {{ ssd_company_contract_type[scope.row.contractType] }}
+          </template>
+        </el-table-column>
         <el-table-column
           label="签订日期"
           prop="signDate"
@@ -42,16 +52,8 @@
           prop="expireDate"
         />
         <el-table-column
-          label="操作员"
-          prop="operator"
-        />
-        <el-table-column
-          label="操作日期"
-          prop="saveDate"
-        />
-        <el-table-column
           label="备注"
-          prop="Mark"
+          prop="remark"
         />
         <el-table-column>
           <template slot-scope="scope">
@@ -97,20 +99,24 @@
         </el-table-column>
       </el-table>
       <!-- table end -->
+      <my-pagination :total="totalCount" methods="toContractPage" :conditions="conditions" />
     </div>
     <!-- 合同图片上传弹窗 -->
     <el-dialog v-el-drag-dialog :visible.sync="dialogVisible" title="合同图片" width="800px">
       <div class="dialog-main img-main">
         <el-upload
           :multiple="true"
-          :file-list="fileList"
           :show-file-list="true"
+          accept=".jpg, .jpeg, .png, .gif"
+          :headers="{Authorization:token}"
           :on-remove="handleRemove"
           :on-success="handleSuccess"
+          :file-list="fileList"
           :before-upload="beforeUpload"
           class="editor-slide-upload"
-          action="https://httpbin.org/post"
+          :action="action"
           list-type="picture-card"
+          name="files"
         >
           <el-button size="small" type="primary">
             点击上传
@@ -126,22 +132,41 @@
     <!-- 合同新增编辑弹窗 -->
     <el-dialog v-el-drag-dialog title="合同信息" :visible.sync="editShow" width="800px">
       <div class="dialog-main">
-        <el-form ref="form" :model="form" label-width="80px">
+        <el-form ref="form" :model="form" label-width="80px" :rules="rules">
           <el-row type="flex" justify="space-between">
             <el-col :span="11">
-              <el-form-item label="合同状态">
-                <el-input v-model="form.status" />
+              <el-form-item label="合同名称" prop="contractName">
+                <el-input v-model="form.contractName" />
               </el-form-item>
             </el-col>
             <el-col :span="11">
-              <el-form-item label="合同类别">
-                <el-input v-model="form.contractType" />
+              <el-form-item label="合同状态" prop="status">
+                <el-select v-model="form.status" placeholder="">
+                  <el-option
+                    v-for="(val, key) in ssd_company_contract_status"
+                    :key="val"
+                    :label="val"
+                    :value="key"
+                  />
+                </el-select>
               </el-form-item>
             </el-col>
           </el-row>
           <el-row type="flex" justify="space-between">
             <el-col :span="11">
-              <el-form-item label="签订日期">
+              <el-form-item label="合同类别" prop="contractType">
+                <el-select v-model="form.contractType" placeholder="">
+                  <el-option
+                    v-for="(val, key) in ssd_company_contract_type"
+                    :key="val"
+                    :label="val"
+                    :value="key"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="11">
+              <el-form-item label="签订日期" prop="signDate">
                 <el-date-picker
                   v-model="form.signDate"
                   type="date"
@@ -149,8 +174,10 @@
                 />
               </el-form-item>
             </el-col>
+          </el-row>
+          <el-row type="flex" justify="space-between">
             <el-col :span="11">
-              <el-form-item label="到期日期">
+              <el-form-item label="到期日期" prop="expireDate">
                 <el-date-picker
                   v-model="form.expireDate"
                   type="date"
@@ -158,27 +185,9 @@
                 />
               </el-form-item>
             </el-col>
-          </el-row>
-          <el-row type="flex" justify="space-between">
             <el-col :span="11">
-              <el-form-item label="操作员">
-                <el-input v-model="form.operator" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="11">
-              <el-form-item label="操作日期">
-                <el-date-picker
-                  v-model="form.saveDate"
-                  type="date"
-                  value-format="yyyy-MM-dd"
-                />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row type="flex" justify="space-between">
-            <el-col :span="24">
               <el-form-item label="备注">
-                <el-input v-model="form.Mark" />
+                <el-input v-model="form.remark" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -193,7 +202,7 @@
     <!-- 合同新增编辑弹窗end -->
     <!-- 图片查看器 -->
     <el-image-viewer
-      v-show="imgShow"
+      v-if="imgShow"
       :on-close="viewerClose"
       :url-list="srcList"
     />
@@ -203,61 +212,82 @@
 
 <script>
 import myfilters from '@/components/myfilters'
+import myPagination from '@/components/MyPagination'
+import api from '@/api'
+import APIconfig from '@/api/APIconfig'
+import { getToken } from '@/utils/auth'
+const fileURL = api.fileURL
 
 export default {
   components: {
-    myfilters
+    myfilters, myPagination
   },
+  inject: ['reload'],
   data() {
     return {
-      url: 'https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=3845958690,3966941989&fm=26&gp=0.jpg',
-      srcList: [
-        'https://ss3.bdstatic.com/70cFv8Sh_Q1YnxGkpoWK1HF6hhy/it/u=3845958690,3966941989&fm=26&gp=0.jpg'
-      ],
-      listObj: {},
+      action: fileURL,
+      listLoading: true,
+      rules: {
+        contractName: [
+          { required: true, message: '请输入合同名称', trigger: 'blur' }
+        ],
+        contractType: [
+          { required: true, message: '请选择合同类别', trigger: 'blur' }
+        ],
+        expireDate: [
+          { required: true, message: '请选择到期日期', trigger: 'blur' }
+        ],
+        signDate: [
+          { required: true, message: '请选择签订日期', trigger: 'blur' }
+        ],
+        status: [
+          { required: true, message: '请选择合同状态', trigger: 'blur' }
+        ]
+      },
+      srcList: [],
       fileList: [],
       dialogVisible: false,
       imgShow: false,
-      form: {
-        status: '',
-        contractType: '',
-        signDate: '',
-        expireDate: '',
-        Mark: '',
-        operator: '',
-        saveDate: ''
-      },
+      form: {},
       oldForm: {},
       edit: false,
       editIndex: 0,
       editShow: false,
-      tableData: [
-        {
-          status: '已到期',
-          contractType: '许可证类别',
-          signDate: '2015-7-15',
-          expireDate: '2020-7-15',
-          Mark: '',
-          operator: '赵美丽',
-          saveDate: '2015-7-15'
-        },
-        {
-          status: '未到期',
-          contractType: '许可证类别',
-          signDate: '2020-7-15',
-          expireDate: '2025-7-15',
-          Mark: '',
-          operator: '赵美丽',
-          saveDate: '2020-7-15'
-        }
-      ],
-      title: ''
+      tableData: [],
+      id: '',
+      ssd_company_contract_status: null,
+      ssd_company_contract_type: null,
+      totalCount: 0,
+      conditions: {
+        companyId: null
+      }
+    }
+  },
+  computed: {
+    token() {
+      const token = getToken()
+      return `Bearer ${token}`
     }
   },
   created() {
-    this.title = this.$route.params.title
+    this.id = this.$route.query.id
+    this.conditions.companyId = this.$route.query.id
+    this.fetchData()
   },
   methods: {
+    fetchData() {
+      this.listLoading = true
+      api.toContractPage({ companyId: this.$route.query.id }).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.totalCount = response.data.totalCount
+          this.ssd_company_contract_status = response.data.dictData.ssd_company_contract_status
+          this.ssd_company_contract_type = response.data.dictData.ssd_company_contract_type
+          this.tableData = response.data.records
+          this.listLoading = false
+        }
+      })
+    },
     // 操作下拉点击
     handleCommand({ index, row, action }) {
       this[action](index, row)
@@ -266,40 +296,82 @@ export default {
     viewerClose() {
       this.imgShow = false
     },
+    imgSrc(imageInfo) {
+      return `${APIconfig.baseUrl}/${imageInfo}`
+    },
+    imgClick(index, row) {
+      this.srcList = []
+      row.images.forEach(item => {
+        this.srcList.push(this.imgSrc(item.url))
+      })
+      this.imgShow = true
+    },
     // 上传
-    handleUpload() {
+    handleUpload(index, row) {
+      this.form = {
+        busiId: row.id,
+        busiType: '5'
+      }
+      this.fileList = []
+      if (row.images) {
+        row.images.forEach((item, index) => {
+          const img = {
+            uid: item.id,
+            url: this.imgSrc(item.url)
+          }
+          this.fileList.push(img)
+        })
+      }
       this.dialogVisible = true
     },
     // 删除
     handleDelete(index, row) {
-      this.$message({
-        message: '删除成功',
-        type: 'success'
+      api.toDeletecontract(row).then(response => {
+        // console.log(response)
+        if (response.code === '200' && response.data.busiCode === '1') {
+          this.tableData.splice(index, 1)
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
+        } else {
+          this.$message({
+            message: '删除失败，请重试',
+            type: 'error'
+          })
+        }
       })
-      this.tableData.splice(index, 1)
     },
     // 新增
     addClick() {
       this.edit = false
       this.editShow = true
       this.form = {
-        status: '',
-        contractType: '',
-        signDate: '',
-        expireDate: '',
-        Mark: '',
-        operator: '',
-        saveDate: ''
+        companyId: this.id
       }
     },
     // 新增弹窗确认按钮
     addSubmit() {
-      this.$message({
-        message: '添加成功',
-        type: 'success'
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toAddcontract(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.tableData.push(response.data)
+              this.$message({
+                message: '添加成功',
+                type: 'success'
+              })
+            }
+          })
+          this.editShow = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
-      this.tableData.push(this.form)
-      this.editShow = false
     },
     // 编辑
     handleEdit(index, row) {
@@ -311,73 +383,74 @@ export default {
     },
     // 编辑弹窗确认按钮
     editSubmit() {
-      this.editShow = false
       if (JSON.stringify(this.form) === JSON.stringify(this.oldForm)) {
         this.$message('无信息修改')
+        this.editShow = false
         return
       }
-      this.$message({
-        message: '修改成功',
-        type: 'success'
+      this.$refs.form.validate(async valid => {
+        if (valid) {
+          api.toRevisecontract(this.form).then(response => {
+            // console.log(response)
+            if (response.code === '200' && response.data.busiCode === '1') {
+              this.tableData.splice(this.editIndex, 1, response.data)
+              this.$message({
+                message: '修改成功',
+                type: 'success'
+              })
+            }
+          })
+          this.editShow = false
+        } else {
+          this.$message({
+            message: '请按要求填写',
+            type: 'warning'
+          })
+        }
       })
-      this.tableData.splice(this.editIndex, 1, this.form)
-    },
-    // 查看所有图片是否上传完毕
-    checkAllSuccess() {
-      return Object.keys(this.listObj).every(item => this.listObj[item].hasSuccess)
     },
     // 上传按钮
     handleSubmit() {
-      const arr = Object.keys(this.listObj).map(v => this.listObj[v])
-      if (!this.checkAllSuccess()) {
-        this.$message({
-          message: '请等待所有图片上传完毕',
-          type: 'warning'
-        })
-        return false
-      }
-      this.$emit('successCBK', arr)
-      this.listObj = {}
-      this.fileList = []
+      this.reload()
       this.dialogVisible = false
     },
     // 上传成功
     handleSuccess(response, file) {
-      const uid = file.uid
-      const objKeyArr = Object.keys(this.listObj)
-      for (let i = 0, len = objKeyArr.length; i < len; i++) {
-        if (this.listObj[objKeyArr[i]].uid === uid) {
-          this.listObj[objKeyArr[i]].url = response.files.file
-          this.listObj[objKeyArr[i]].hasSuccess = true
-          return
-        }
+      if (!response.success) {
+        return this.$message.error(response.errMsg)
       }
+      this.form.imageInfo = response.resData[0].FilePath
+      api.toPostImage(this.form).then(res => {
+        file.uid = res.data.id
+        if (res.code === '200' && res.data.busiCode === '1') {
+          // this.fileList.push(res.data)
+          this.$message({
+            message: '上传成功',
+            type: 'success'
+          })
+        }
+      })
     },
     // 移除上传内容
     handleRemove(file) {
-      const uid = file.uid
-      const objKeyArr = Object.keys(this.listObj)
-      for (let i = 0, len = objKeyArr.length; i < len; i++) {
-        if (this.listObj[objKeyArr[i]].uid === uid) {
-          delete this.listObj[objKeyArr[i]]
-          return
+      api.deleteImage({ id: file.uid }).then(res => {
+        if (res.code === '200' && res.data.busiCode === '1') {
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
         }
-      }
+      })
     },
     // 上传的动作
     beforeUpload(file) {
-      const _self = this
-      const _URL = window.URL || window.webkitURL
-      const fileName = file.uid
-      this.listObj[fileName] = {}
-      return new Promise((resolve, reject) => {
-        const img = new Image()
-        img.src = _URL.createObjectURL(file)
-        img.onload = function() {
-          _self.listObj[fileName] = { hasSuccess: false, uid: file.uid, width: this.width, height: this.height }
-        }
-        resolve(true)
-      })
+      const typeCheck = file.type === 'image/jpeg' || file.type === 'image/png'
+      if (!typeCheck) {
+        this.$message.error('上传图片只支持 JPG 或PNG 格式!')
+        return new Promise((resolve, reject) => {
+          reject(false)
+        })
+      }
     }
   }
 }
@@ -385,6 +458,19 @@ export default {
 <style lang="scss" type="text/scss" scoped>
 .img-main {
   padding: 30px 20px;
+}
+::v-deep .el-form-item__label {
+  text-align: left;
+  font-weight: normal;
+}
+::v-deep {
+  .is-uploading,
+  .is-ready,
+  .el-list-leave,
+  .el-list-enter,
+  .el-list-leave-active{
+    display: none;
+  }
 }
 </style>
 

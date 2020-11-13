@@ -4,8 +4,8 @@
       <el-form ref="form" :model="form" label-width="80px" :rules="rules">
         <el-row type="flex" justify="space-between">
           <el-col :span="11">
-            <el-form-item label="编号" prop="No">
-              <el-input v-model="form.No" />
+            <el-form-item label="编号" prop="num">
+              <el-input v-model="form.num" />
             </el-form-item>
           </el-col>
           <el-col :span="11">
@@ -21,10 +21,13 @@
             </el-form-item>
           </el-col>
           <el-col :span="11">
-            <el-form-item label="有效性" prop="effective">
-              <el-radio-group v-model="form.effective">
-                <el-radio :label="true">有效</el-radio>
-                <el-radio :label="false">无效</el-radio>
+            <el-form-item label="有效性" prop="validFlag">
+              <el-radio-group v-model="form.validFlag">
+                <el-radio
+                  v-for="(val, key) in ssdCommonBoolean"
+                  :key="val"
+                  :label="+key"
+                >{{ val }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
@@ -32,12 +35,12 @@
         <el-row type="flex" justify="space-between">
           <el-col :span="11">
             <el-form-item label="拼音码">
-              <el-input v-model="form.pinyinCode" />
+              <el-input v-model="form.spellCode" />
             </el-form-item>
           </el-col>
           <el-col :span="11">
             <el-form-item label="五笔码">
-              <el-input v-model="form.wubingCode" />
+              <el-input v-model="form.strokeCode" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -75,6 +78,10 @@ export default {
     curForm: {
       type: Object,
       default: () => {}
+    },
+    ssdCommonBoolean: {
+      type: Object,
+      default: () => {}
     }
   },
   data() {
@@ -83,19 +90,18 @@ export default {
         name: [
           { required: true, message: '请输入名称', trigger: 'blur' }
         ],
-        No: [
+        num: [
+          { required: true, message: '请输入编号', trigger: 'blur' }
+        ],
+        code: [
           { required: true, message: '请输入编码', trigger: 'blur' }
+        ],
+        validFlag: [
+          { required: true, message: '请选择有效性', trigger: 'blur' }
         ]
       },
-      form: {
-        name: '',
-        No: '',
-        effective: true,
-        useTime: '',
-        remark: '',
-        // pinyinCode: '',
-        code: ''
-      }
+      form: {},
+      oldForm: {}
     }
   },
   computed: {},
@@ -103,21 +109,21 @@ export default {
     curForm: {
       deep: true,
       handler(val) {
-        this.form = val
+        this.form = JSON.parse(JSON.stringify(val))
+        this.oldForm = JSON.parse(JSON.stringify(val))
       }
     }
   },
   created() {},
-  mounted() { this.form = this.curForm },
+  mounted() {
+    this.form = JSON.parse(JSON.stringify(this.curForm))
+    this.oldForm = JSON.parse(JSON.stringify(this.curForm))
+  },
   methods: {
     // 添加确认
     addSubmit() {
-      this.$refs.form.validate((valid) => {
+      this.$refs.form.validate(async valid => {
         if (valid) {
-          this.$message({
-            message: '添加成功',
-            type: 'success'
-          })
           this.$emit('addItem', this.form)
         } else {
           this.$message({
@@ -129,12 +135,13 @@ export default {
     },
     // 编辑确认
     editSubmit() {
-      this.$refs.form.validate((valid) => {
+      if (JSON.stringify(this.form) === JSON.stringify(this.oldForm)) {
+        this.$message('无信息修改')
+        this.$parent.$parent.show = false
+        return
+      }
+      this.$refs.form.validate(async valid => {
         if (valid) {
-          this.$message({
-            message: '修改成功',
-            type: 'success'
-          })
           this.$emit('editItem', this.form)
         } else {
           this.$message({
@@ -148,10 +155,6 @@ export default {
 }
 </script>
 <style lang='scss' scoped>
-::v-deep .el-form-item.is-required:not(.is-no-asterisk) .el-form-item__label-wrap>.el-form-item__label:before,
-::v-deep  .el-form-item.is-required:not(.is-no-asterisk)>.el-form-item__label:before {
-  display: none;
-}
 .dialog-footer {
   background-color: #e9e9e9;
     height: 60px;

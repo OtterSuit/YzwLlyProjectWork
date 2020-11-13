@@ -7,6 +7,7 @@
 </template>
 
 <script>
+import 'echarts/lib/chart/tree'
 import resize from './mixins/resize'
 export default {
   mixins: [resize],

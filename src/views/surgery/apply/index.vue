@@ -7,18 +7,16 @@
       placeholder="申请人/订单编号"
       :choose-date="true"
       :add-button="true"
+      :choose-type="true"
       :choose-status="true"
-      :choose-states="true"
-      add-icon="el-icon-circle-plus-outline"
       addifo="物品申领"
+      :type-options="typeOptions"
       :status-options="statusOptions"
-      :states-options="statesOptions"
-      format="yyyy.MM.dd"
       :search-content="true"
       @contentChange="contentChange"
       @dateChange="dateChange"
+      @typeChange="typeChange"
       @statusChange="statusChange"
-      @statesChange="statesChange"
       @addClick="applyClick"
     />
     <!-- 头部 end -->
@@ -82,14 +80,14 @@ export default {
   },
   data() {
     return {
-      statesOptions: [
+      statusOptions: [
         {
           value: '全部状态',
           label: '全部状态'
         },
         {
-          value: '已收货',
-          label: '已收货'
+          value: '已回收',
+          label: '已回收'
         },
         {
           value: '未审核',
@@ -108,7 +106,7 @@ export default {
           label: '已审核，待配包'
         }
       ],
-      statusOptions: [
+      typeOptions: [
         {
           value: '全部类别',
           label: '全部类别'
@@ -232,16 +230,16 @@ export default {
     dateChange(date) {
       console.log(date)
     },
-    statusChange(status) {
+    typeChange(status) {
       console.log(status)
     },
-    statesChange(states) {
+    statusChange(states) {
       console.log(states)
     },
     // 状态标签文字
     state(state) {
       const stateMap = {
-        '1': '已收货',
+        '1': '已回收',
         '2': '未审核',
         '3': '已驳回',
         '4': '已取消',
