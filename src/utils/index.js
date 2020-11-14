@@ -1,0 +1,173 @@
+/**
+ * Created by PanJiaChen on 16/11/18.
+ */
+
+/**
+ * Parse the time to string
+ * @param {(Object|string|number)} time
+ * @param {string} cFormat
+ * @returns {string | null}
+ */
+export function parseTime(time, cFormat) {
+  if (arguments.length === 0 || !time) {
+    return null
+  }
+  const format = cFormat || '{y}-{m}-{d} {h}:{i}:{s}'
+  let date
+  if (typeof time === 'object') {
+    date = time
+  } else {
+    if ((typeof time === 'string')) {
+      if ((/^[0-9]+$/.test(time))) {
+        // support "1548221490638"
+        time = parseInt(time)
+      } else {
+        // support safari
+        // https://stackoverflow.com/questions/4310953/invalid-date-in-safari
+        time = time.replace(new RegExp(/-/gm), '/')
+      }
+    }
+
+    if ((typeof time === 'number') && (time.toString().length === 10)) {
+      time = time * 1000
+    }
+    date = new Date(time)
+  }
+  const formatObj = {
+    y: date.getFullYear(),
+    m: date.getMonth() + 1,
+    d: date.getDate(),
+    h: date.getHours(),
+    i: date.getMinutes(),
+    s: date.getSeconds(),
+    a: date.getDay()
+  }
+  const time_str = format.replace(/{([ymdhisa])+}/g, (result, key) => {
+    const value = formatObj[key]
+    // Note: getDay() returns 0 on Sunday
+    if (key === 'a') { return ['日', '一', '二', '三', '四', '五', '六'][value ] }
+    return value.toString().padStart(2, '0')
+  })
+  return time_str
+}
+
+/**
+ * @param {number} time
+ * @param {string} option
+ * @returns {string}
+ */
+export function formatTime(time, option) {
+  if (('' + time).length === 10) {
+    time = parseInt(time) * 1000
+  } else {
+    time = +time
+  }
+  const d = new Date(time)
+  const now = Date.now()
+
+  const diff = (now - d) / 1000
+
+  if (diff < 30) {
+    return '刚刚'
+  } else if (diff < 3600) {
+    // less 1 hour
+    return Math.ceil(diff / 60) + '分钟前'
+  } else if (diff < 3600 * 24) {
+    return Math.ceil(diff / 3600) + '小时前'
+  } else if (diff < 3600 * 24 * 2) {
+    return '1天前'
+  }
+  if (option) {
+    return parseTime(time, option)
+  } else {
+    return (
+      d.getMonth() +
+      1 +
+      '月' +
+      d.getDate() +
+      '日' +
+      d.getHours() +
+      '时' +
+      d.getMinutes() +
+      '分'
+    )
+  }
+}
+
+/**
+ * @param {string} url
+ * @returns {Object}
+ */
+export function param2Obj(url) {
+  const search = decodeURIComponent(url.split('?')[1]).replace(/\+/g, ' ')
+  if (!search) {
+    return {}
+  }
+  const obj = {}
+  const searchArr = search.split('&')
+  searchArr.forEach(v => {
+    const index = v.indexOf('=')
+    if (index !== -1) {
+      const name = v.substring(0, index)
+      const val = v.substring(index + 1, v.length)
+      obj[name] = val
+    }
+  })
+  return obj
+}
+
+export function format(fmt) {
+  const d = new Date()
+  var o = {
+    'M+': d.getMonth() + 1, // 月份
+    'd+': d.getDate(), // 日
+    'H+': d.getHours(), // 小时
+    'm+': d.getMinutes(), // 分
+    's+': d.getSeconds(), // 秒
+    'q+': Math.floor((d.getMonth() + 3) / 3), // 季度
+    'S': d.getMilliseconds() // 毫秒
+  }
+  if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (d.getFullYear() + '').substr(4 - RegExp.$1.length))
+  for (var k in o) { if (new RegExp('(' + k + ')').test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length === 1) ? (o[k]) : (('00' + o[k]).substr(('' + o[k]).length))) }
+  return fmt
+}
+// 比较时间
+export function compareTime(time, fontTime) {
+  const expireTime = (new Date(time)).getTime()
+  const Now = (new Date()).getTime()
+  // console.log((expireTime - Now) / 1000)
+
+  return (expireTime - Now) / 1000 >= fontTime
+}
+
+// 非空判断
+export function notEmpty(str) {
+  if (str == null || str === '' || str.trim() === undefined) {
+    return false
+  }
+  return true
+}
+
+function _savaFile(data, filename) {
+  const save_link = document.createElementNS('http://www.w3.org/1999/xhtml', 'a')
+  save_link.href = data
+  save_link.download = filename
+  const event = document.createEvent('MouseEvents')
+  event.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
+  save_link.dispatchEvent(event)
+}
+function _fixtype(type) {
+  type = type.toLocaleLowerCase().replace(/jpg/i, 'jpeg')
+  const r = type.match(/png|jpeg|bmp|gif/)[0]
+  return 'image/' + r
+}
+// 保存图片
+export function downloadImg(type, imgdata, name) {
+  // 将mime-type改为image/octet-stream,强制让浏览器下载
+  const newImgdata = imgdata.replace(_fixtype(type), 'image/octet-stream')
+  // 将图片保存到本地
+  const filename = name + '.' + type
+  // 我想用当前秒是可以解决重名的问题了 不行你就换成毫秒
+  _savaFile(newImgdata, filename)
+}
+
